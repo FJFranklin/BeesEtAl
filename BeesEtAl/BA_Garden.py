@@ -86,7 +86,6 @@ class BA_Garden(Base_Optimiser):
             bests[p,:] = self.patch[p].new_global_search(self.sequence, 'dropped')
             count = p + 1
 
-
         costs = self.lookup(bests)[0] # really the ranks, but these act as costs for sorting
 
         isort = np.argsort(costs[0:count])

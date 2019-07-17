@@ -12,7 +12,6 @@ class BA_Patch(object):
         self.old_cost = 0      # cost at old_X
         self.sequence = 0      # number identifying each search sequence
         self.history  = None
-        self.optimism = 0
 
     def X_from_MESO(self):
         X = np.copy(self.old_X)
@@ -51,7 +50,6 @@ class BA_Patch(object):
         bFailed = True
 
         Neval = 0 # number of evaluations of the cost function
-        Ngood = 0 # number that improved the cost
 
         for p in range(0, prior): # prior is the number of bees attracted to this patch
             if bPatch:
@@ -82,12 +80,11 @@ class BA_Patch(object):
 
             Neval = Neval + 1
 
-            if cost < self.old_cost:
+            if self.G.compare(XA, self.old_X):
                 bFailed = False
-                Ngood = Ngood + 1
 
             if self.G.dynamic:
-                if cost < self.old_cost:
+                if self.G.compare(XA, self.old_X):
                     if self.G.costfn.verbose:
                         print('(updating patch)')
 
@@ -110,7 +107,7 @@ class BA_Patch(object):
                     best_XM   = XM
                     best_cost = cost
                     bFirst    = False
-                elif cost < best_cost: # Q. How would this work with a vector (i.e., multi-objective) cost?
+                elif self.G.compare(XA, self.best_X):
                     best_X    = X
                     best_XA   = XA
                     best_XM   = XM
@@ -132,8 +129,6 @@ class BA_Patch(object):
             else:
                 self.try_X = best_XM
 
-        self.optimism = Ngood / (1 + Neval)
-
         return self.old_X # return the local best solution, even if old
 
     def new_global_search(self, seq_id, seq_term): # function cost = new_global_search(sequence_number > 0, termination cause)
@@ -141,7 +136,6 @@ class BA_Patch(object):
             self.G.report(self.sequence, seq_term, self.history)
 
         self.sequence = seq_id
-        self.optimism = 0
         
         cost, XA, XM = self.G.scout.pop()
 
