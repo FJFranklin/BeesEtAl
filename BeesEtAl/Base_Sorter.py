@@ -144,8 +144,9 @@ class Base_Sorter(object):
 
     def get_by_index(self, r):
         rank = self.record[r,0]
+        cost = self.record[r,1:(1+self.Ncost)]
         X    = self.record[r,(1+self.Ncost):(1+self.Ncost+self.Ndim)]
-        return rank, X
+        return rank, cost, X
 
     def dominates(self, X_cost, Y_cost): # returns true if X dominates Y
         bDominates = True
@@ -161,7 +162,7 @@ class Base_Sorter(object):
 
     def pareto(self):
         if self.Nrecord == 0:
-            return None
+            return None, None
 
         the_dominant = []
         the_front    = []

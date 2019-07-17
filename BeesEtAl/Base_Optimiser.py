@@ -18,7 +18,7 @@ class Base_Optimiser(Base_Sorter):
 
         self.costfn    = None   # subclass of Base_Coster
         self.method    = 'ball' # neighborhood shape: ball, sphere, cube, gauss
-        self.rnudge    = 1      # nudge radius - should probably be a lot smaller than 1
+        self.rnudge    = 1E-2   # nudge radius - should probably be a lot smaller than 1
 
         self.scout     = Base_Scout(self)
         self.threshold = 1E-8
@@ -131,7 +131,7 @@ class Base_Optimiser(Base_Sorter):
         u = self.translate_to_unit_cube(X0)
 
         for r in range(0, self.Nrecord):
-            rank_Xr, Xr = self.get_by_index(r)
+            rank_Xr, cost_Xr, Xr = self.get_by_index(r)
             if rank_X0 == rank_Xr:
                 continue
 

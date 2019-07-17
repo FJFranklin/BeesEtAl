@@ -1,3 +1,5 @@
+from mpl_toolkits.mplot3d import Axes3D
+
 import matplotlib.pyplot as plt
 
 class Base_Plotter(object):
@@ -45,3 +47,29 @@ class Base_Plotter(object):
     def sync(self, dt=0.000001):
         plt.draw()
         plt.pause(dt)
+
+    def pareto(self, cost_indices):
+        the_dominant, the_front = self.BO.pareto()
+
+        if the_front is not None and cost_indices is not None and self.BO.Ncost > 1:
+            if len(the_front) > 0:
+                if len(cost_indices) == 2:
+                    X = self.BO.record[the_front,(1+cost_indices[0])]
+                    Y = self.BO.record[the_front,(1+cost_indices[1])]
+
+                    self._open_plot_window()
+
+                    self._ax.scatter(X, Y)
+
+                if len(cost_indices) == 3:
+                    X = self.BO.record[the_front,(1+cost_indices[0])]
+                    Y = self.BO.record[the_front,(1+cost_indices[1])]
+                    Z = self.BO.record[the_front,(1+cost_indices[2])]
+
+                    self._open_plot_window()
+
+                    self._ax = self._fig.add_subplot(111, projection='3d')
+
+                    self._ax.scatter(X, Y, Z)
+
+        return the_dominant, the_front
