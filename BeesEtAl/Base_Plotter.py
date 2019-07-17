@@ -58,8 +58,9 @@ class Base_Plotter(object):
                     Y = self.BO.record[the_front,(1+cost_indices[1])]
 
                     self._open_plot_window()
-
                     self._ax.scatter(X, Y)
+
+                    self.sync()
 
                 if len(cost_indices) == 3:
                     X = self.BO.record[the_front,(1+cost_indices[0])]
@@ -69,9 +70,8 @@ class Base_Plotter(object):
                     self._open_plot_window()
 
                     self._ax = self._fig.add_subplot(111, projection='3d')
-
                     self._ax.scatter(X, Y, Z)
 
-        self.sync()
+                    self.sync()
 
         return the_dominant, the_front
