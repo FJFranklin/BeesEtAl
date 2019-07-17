@@ -5,8 +5,8 @@ from BeesEtAl.BA_Plotter import BA_Plotter
 from BeesEtAl.MartinGaddy import MartinGaddy
 from BeesEtAl.Schwefel import Schwefel
 
-#test = 'Martin-Gaddy'
-test = 'Schwefel'
+test = 'Martin-Gaddy'
+#test = 'Schwefel'
 
 def MG_norm(cost):
     return np.arctan(cost[0]) * 2 / np.pi
@@ -61,8 +61,8 @@ if test == 'Schwefel':
 
 for it in range(1, 31):
     solver_runs = G.iterate()
-
-    print('Iteration {:4d}: Global best = '.format(it) + ' { ' + str(G.record[0,:]) + ' }')
+    best_cost, best_X = G.best()
+    print('Iteration {:4d}: Global best = {c} @ {x}'.format(it, c=best_cost, x=best_X))
 
 G.flush_history()
 P.history((45, 315), 'blue', norm_fn)

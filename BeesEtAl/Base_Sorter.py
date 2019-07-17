@@ -1,11 +1,12 @@
 import numpy as np
 
 class Base_Sorter(object):
-    def __init__(self):
+    def __init__(self, Ndim):
+        self.Ndim    = Ndim
+
         self.ibest   = None # index of best record
         self.record  = None
         self.Nrecord = 0
-        self.Ndim    = 0
         self.Ncost   = 0
         self.bMESO   = False
 
@@ -20,12 +21,27 @@ class Base_Sorter(object):
         return cost, X
 
     def lookup(self, X):
-        index, rank = self.__lookup(X)
+        if X.ndim == 1:
+            index, rank = self.__lookup(X)
 
-        if rank is not None:
-            cost = self.record[index,1:(1+self.Ncost)]
+            if rank is not None:
+                cost = self.record[index,1:(1+self.Ncost)]
+            else:
+                cost = None
         else:
-            cost = None
+            rank = []
+            cost = []
+
+            for ix in range(0, len(X)):
+                index, rthis = self.__lookup(X[ix])
+
+                if rthis is not None:
+                    cthis = self.record[index,1:(1+self.Ncost)]
+                else:
+                    cthis = None
+
+                rank.append(rthis)
+                cost.append(cthis)
 
         return rank, cost
 
@@ -47,22 +63,23 @@ class Base_Sorter(object):
         imin  = 0
         imax  = self.Nrecord
 
-        for ix in range(0, self.Ndim):
-            ir = ix + self.Ncost + 1
+        if imax > imin:
+            for ix in range(0, self.Ndim):
+                ir = ix + self.Ncost + 1
 
-            iL = np.searchsorted(self.record[imin:imax,ir], X[ix], side='left')
-            iR = np.searchsorted(self.record[imin:imax,ir], X[ix], side='right')
+                iL = np.searchsorted(self.record[imin:imax,ir], X[ix], side='left')
+                iR = np.searchsorted(self.record[imin:imax,ir], X[ix], side='right')
 
-            imin = iL
-            imax = iR
+                imax = imin + iR
+                imin = imin + iL
 
-            if imin == imax:
+                if imin == imax:
+                    index = imin
+                    break
+
+            if index is None:
                 index = imin
-                break
-
-        if index is None:
-            index = imin
-            rank  = self.record[index,0]
+                rank  = int(self.record[index,0])
 
         return index, rank
 
@@ -86,6 +103,7 @@ class Base_Sorter(object):
             self.Nrecord = self.Nrecord - 1
             self.__rank()
 
+        #print('Pop: cost={c}, X={x}, M={m}'.format(c=cost, x=X, m=M))
         return cost, X, M
 
     def push(self, cost, X, M=None):
@@ -96,7 +114,6 @@ class Base_Sorter(object):
                 self.record  = np.asarray([[0, *cost, *X, *M],], dtype=np.float64)
                 self.bMESO   = True
             self.Nrecord = 1
-            self.Ndim    = len(X)
             self.Ncost   = len(cost)
             self.ibest   = 0
         else:
@@ -109,6 +126,7 @@ class Base_Sorter(object):
                     self.record = np.insert(self.record, index, [[0, *cost, *X, *M],], axis=0)
                 self.Nrecord = self.Nrecord + 1
                 self.__rank()
+        #print('Push: X={x}, record={r}'.format(x=X, r=self.record))
 
     def __rank(self):
         multi = np.zeros(self.Nrecord)
@@ -123,3 +141,8 @@ class Base_Sorter(object):
             self.record[order[r],0] = r
 
         self.ibest = order[0]
+
+    def get_by_index(self, r):
+        rank = self.record[r,0]
+        X    = self.record[r,(1+self.Ncost):(1+self.Ncost+self.Ndim)]
+        return rank, X
