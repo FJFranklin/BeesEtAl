@@ -46,7 +46,9 @@ class Base_Coster(object):
             self.evaluate_cost()
 
             if np.isscalar(self.cost):
-                self.cost = [self.cost] # cost must be an array
+                self.cost = np.asarray([self.cost]) # cost must be an array
+            else:
+                self.cost = np.asarray(self.cost)
 
             # note the cost at the true position
             self.BO.push(self.cost, self.XA)

@@ -4,8 +4,10 @@ from BeesEtAl.BA_Garden import BA_Garden
 from BeesEtAl.BA_Plotter import BA_Plotter
 from BeesEtAl.MartinGaddy import MartinGaddy
 from BeesEtAl.Schwefel import Schwefel
+from BeesEtAl.Viennet import Viennet
 
-test = 'Martin-Gaddy'
+test = 'Viennet'
+#test = 'Martin-Gaddy'
 #test = 'Schwefel'
 
 def MG_norm(cost):
@@ -13,6 +15,9 @@ def MG_norm(cost):
 
 def Schwefel_norm(cost):
     return np.arctan((cost[0] + 2513.9) / 2513.9) * 2 / np.pi
+
+def Viennet_norm(cost):
+    return np.arctan(np.linalg.norm(cost - [0,16.8,0])) * 2 / np.pi
 
 # design variable ranges
 
@@ -27,6 +32,12 @@ if test == 'Schwefel':
     maxima =  500 * np.ones(6)
 
     plotaxes = [5, 2]
+
+if test == 'Viennet':
+    minima = np.asarray([-3, -3])
+    maxima = np.asarray([ 3,  3])
+
+    plotaxes = [0, 1]
 
 priorities =  [5,2,2,1]
 # priorities = [5,2,2,1]; # 3 active patches, one extra scout
@@ -58,6 +69,10 @@ if test == 'Martin-Gaddy':
 if test == 'Schwefel':
     G.costfn = Schwefel(G)
     norm_fn = Schwefel_norm
+
+if test == 'Viennet':
+    G.costfn = Viennet(G)
+    norm_fn = Viennet_norm
 
 for it in range(1, 31):
     solver_runs = G.iterate()
