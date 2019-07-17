@@ -17,7 +17,7 @@ def Schwefel_norm(cost):
     return np.arctan((cost[0] + 2513.9) / 2513.9) * 2 / np.pi
 
 def Viennet_norm(cost):
-    return np.arctan(np.linalg.norm(cost - [0,16.8,0])) * 2 / np.pi
+    return np.arctan(np.linalg.norm(cost - [0,15,-0.1])) * 2 / np.pi
 
 # design variable ranges
 
@@ -74,11 +74,27 @@ if test == 'Viennet':
     G.costfn = Viennet(G)
     norm_fn = Viennet_norm
 
-for it in range(1, 31):
+for it in range(1, 101):
     solver_runs = G.iterate()
     best_cost, best_X = G.best()
     print('Iteration {:4d}: Global best = {c} @ {x}'.format(it, c=best_cost, x=best_X))
 
-G.flush_history()
-P.history((45, 315), 'blue', norm_fn)
-P.save('test.png')
+if test == 'Viennet':
+    the_dominant, the_front = G.pareto()
+    print('Dominant  = {t}'.format(t=the_dominant))
+    print('The Front = {t}'.format(t=the_front))
+
+    from mpl_toolkits.mplot3d import Axes3D
+    import matplotlib.pyplot as plt
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    X = G.record[the_front,1]
+    Y = G.record[the_front,2]
+    Z = G.record[the_front,3]
+    ax.scatter(X, Y, Z)
+    plt.show()
+else:
+    G.flush_history()
+    P.history((45, 315), 'blue', norm_fn)
+    P.save('test.png')

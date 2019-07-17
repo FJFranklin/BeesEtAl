@@ -146,3 +146,48 @@ class Base_Sorter(object):
         rank = self.record[r,0]
         X    = self.record[r,(1+self.Ncost):(1+self.Ncost+self.Ndim)]
         return rank, X
+
+    def dominates(self, X_cost, Y_cost): # returns true if X dominates Y
+        bDominates = True
+
+        for ic in range(0, self.Ncost):
+            if X_cost[ic] < Y_cost[ic]:
+                continue
+
+            bDominates = False
+            break
+
+        return bDominates
+
+    def pareto(self):
+        if self.Nrecord == 0:
+            return None
+
+        the_dominant = []
+        the_front    = []
+
+        for ip in range(0, self.Nrecord):
+            pcost = self.record[ip,1:(1+self.Ncost)]
+
+            bDominant  = True
+            bDominated = False
+
+            for ir in range(0, self.Nrecord):
+                if ip == ir:
+                    continue
+
+                rcost = self.record[ir,1:(1+self.Ncost)]
+
+                if self.dominates(rcost, pcost):
+                    bDominated = True
+                    bDominant  = False
+                    break
+                if self.dominates(pcost, rcost) == False:
+                    bDominant  = False
+
+            if bDominant:
+                the_dominant.append(ip)
+            elif bDominated == False:
+                the_front.append(ip)
+
+        return the_dominant, the_front
