@@ -3,12 +3,12 @@ BeesEtAl - An implementation of the Bees Algorithm for optimisation
 
 ## Overview
 
-This is intended eventually to be a suite of optimisation algorithms
-mainly for research purposes. The intended use is for problems where
-evaluation of the cost function is itself intensive and costly in
-time, and therefore a severely restricted number of analyses is
-permitted. This implementation (BeesEtAl) is unlikely to be efficient
-when the number of evaluations is large, i.e., >> 10000.
+This is intended eventually to be a suite of (multi-objective) optimisation
+algorithms mainly for research purposes. The intended use is for problems
+where evaluation of the cost function is itself intensive and costly in
+time, and therefore a severely restricted number of analyses is permitted.
+This implementation (BeesEtAl) is unlikely to be efficient when the number
+of evaluations is large, i.e., >> 10000.
 
 # License
 
