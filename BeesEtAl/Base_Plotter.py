@@ -72,4 +72,6 @@ class Base_Plotter(object):
 
                     self._ax.scatter(X, Y, Z)
 
+        self.sync()
+
         return the_dominant, the_front
