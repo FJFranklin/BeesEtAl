@@ -8,6 +8,10 @@ class MartinGaddy(Base_Coster):
     MartinGaddy Martin & Gaddy (2D) cost function with discretisation & MESO suggestion
     """
 
+    @staticmethod
+    def extents():
+        return np.zeros(2), 10 * np.ones(2)
+
     def __init__(self, base_optimiser):
         Base_Coster.__init__(self, base_optimiser)
 

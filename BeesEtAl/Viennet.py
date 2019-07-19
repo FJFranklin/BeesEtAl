@@ -7,6 +7,10 @@ class Viennet(Base_Coster):
     Viennet multi-objective optimisation test function
     """
 
+    @staticmethod
+    def extents():
+        return -3 * np.ones(2), 3 * np.ones(2)
+
     def __init__(self, base_optimiser):
         Base_Coster.__init__(self, base_optimiser)
 

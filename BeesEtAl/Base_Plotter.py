@@ -17,12 +17,14 @@ class Base_Plotter(object):
         if self.BO.Ndim == 2 and self._plotaxes is None:
             self._plotaxes = [0, 1]
         if self._plotaxes is not None:
+            self._default_axes()
+            self.sync()
+
+    def _default_axes(self):
             self._open_plot_window()
 
             self._ax.set_xlim([self.BO.minima[self._plotaxes[0]], self.BO.maxima[self._plotaxes[0]]])
             self._ax.set_ylim([self.BO.minima[self._plotaxes[1]], self.BO.maxima[self._plotaxes[1]]])
-
-            self.sync()
 
     def _open_plot_window(self):
         if self._ax is None:
