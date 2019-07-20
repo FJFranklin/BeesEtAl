@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 
 from .Base_Scout import Base_Scout
@@ -152,3 +154,6 @@ class Base_Optimiser(Base_Sorter):
             X = np.copy(X0)
 
         return X
+
+    def principal_radius(self, Nentity):
+        return (math.gamma(1 + self.Ndim / 2) / Nentity)**(1 / self.Ndim) / math.sqrt(math.pi)

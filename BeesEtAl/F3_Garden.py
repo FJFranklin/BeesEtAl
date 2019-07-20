@@ -1,5 +1,3 @@
-import math
-
 import numpy as np
 
 from .F3_Fly         import F3_Fly
@@ -7,54 +5,60 @@ from .Base_Optimiser import Base_Optimiser
 
 class F3_Garden(Base_Optimiser):
 
-    def __init__(self, range_minima, range_maxima, unisex=True):
+    def __init__(self, range_minima, range_maxima, flies_bees):
         Base_Optimiser.__init__(self, range_minima, range_maxima)
 
-        self.rmin   = 0.01   # search radius - minimum
-        self.rmax   = 1      # search radius - maximum
+        self.flies_bees  = flies_bees
 
-        self.unisex = unisex
-
-        if self.unisex:
-            self.trans = 0 
+        if len(self.flies_bees) == 3:
+            if self.flies_bees[0] == 2:
+                self.genders = ['F', 'M']
+                self.orients = [['M'], ['F'], ['F', 'M']]
+            else:
+                self.genders = ['N', 'F', 'M']
+                self.orients = [['M', 'N'], ['N', 'F'], ['F', 'M'], ['M', 'N', 'F']]
+            self.trans   = 0.1    # probability of gender transition
+            self.diverse = True
         else:
-            self.trans = 0.1 # probability of gender transition
+            self.trans   = 0
+            self.genders = ['N']
+            self.orients = [['N']]
+            self.diverse = False
+
+        self.rmin   = 0.01        # search radius - minimum
+        self.rmax   = self.principal_radius(self.flies_bees[0] * len(self.genders) * len(self.orients))
 
         self.Nflies = 0
         self.flies  = []
 
-    def iterate(self):
+    def iterate(self, max_solver_runs=None):
         if self.plotter is not None:
             self.plotter.new()
 
-        if self.unisex:
-            genders = ['N']
-        else:
-            genders = ['N', 'F', 'M']
-
         if self.Nflies == 0:
-            self.scout.schedule(21)
-            self.scout.evaluate(21)
-
-            if self.unisex:
-                orientations = [['N']]
+            if self.diverse:
+                for g in self.genders:
+                    for o in self.orients:
+                        for i in range(0, self.flies_bees[0]):
+                            self.Nflies = self.Nflies + 1
+                            self.flies.append(F3_Fly(self, self.Nflies, g, o))
             else:
-                orientations = [['M'], ['N'], ['F'], ['M', 'N'], ['N', 'F'], ['F', 'M'], ['M', 'N', 'F']]
+                self.Nflies = self.flies_bees[0]
 
-            for g in genders:
-                for o in orientations:
-                    if self.unisex:
-                        per_go = 21
-                    else:
-                        per_go =  1
-                    for i in range(0, per_go):
-                        self.Nflies = self.Nflies + 1
-                        self.flies.append(F3_Fly(self, self.Nflies, g, o))
+                for i in range(0, self.Nflies):
+                    self.flies.append(F3_Fly(self, i + 1, self.genders[0], self.orients[0]))
+
+            self.scout.schedule(self.Nflies)
+            self.scout.evaluate(self.Nflies)
 
             for f in self.flies:
                 f.new_global_search()
         else:
             for fi in self.flies:
+                if max_solver_runs is not None:
+                    if max_solver_runs <= self.Nrecord:
+                        break
+
                 social_set = [fi]
                 for fj in self.flies:
                     if fi.id_no == fj.id_no:
@@ -77,7 +81,7 @@ class F3_Garden(Base_Optimiser):
 
         chosen_few = []
 
-        for g in genders:
+        for g in self.genders:
             gender_set = []
             for f in self.flies:
                 if f.gender == g:
@@ -90,15 +94,12 @@ class F3_Garden(Base_Optimiser):
 
                 chosen_few.append(gender_set[np.argsort(rank_abs)[0]])
 
-        if len(chosen_few) == 1:
-            chosen_few[0].bees(9, self.rmin)
-        elif len(chosen_few) == 2:
-            chosen_few[0].bees(5, self.rmin)
-            chosen_few[1].bees(4, self.rmin)
-        else:
-            chosen_few[0].bees(3, self.rmin)
-            chosen_few[1].bees(3, self.rmin)
-            chosen_few[2].bees(3, self.rmin)
+        for c in chosen_few:
+            if max_solver_runs is not None:
+                if max_solver_runs <= self.Nrecord:
+                    break
+
+            c.bees(min([self.flies_bees[1], (max_solver_runs - self.Nrecord)]), self.rmin)
 
         if self.plotter is not None:
             self.plotter.done()

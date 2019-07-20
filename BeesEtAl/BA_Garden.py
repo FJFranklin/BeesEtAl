@@ -1,5 +1,3 @@
-import math
-
 import numpy as np
 
 from .BA_Patch import BA_Patch
@@ -139,7 +137,7 @@ class BA_Garden(Base_Optimiser):
             r0 = (1 / Nbee)**(1 / self.Ndim) / 2
         else:
             # Divide the unit cube up into Nbee equal spheres, where:
-            r0 = (math.gamma(1 + self.Ndim / 2) / Nbee)**(1 / self.Ndim) / math.sqrt(math.pi)
+            r0 = self.principal_radius(Nbee)
 
         sf = (final_radius / r0)**(1 / (Nfail - 1))
         return r0, sf

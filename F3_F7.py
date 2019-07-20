@@ -1,3 +1,5 @@
+import csv
+
 import numpy as np
 
 from BeesEtAl.F3_Garden   import F3_Garden
@@ -30,31 +32,52 @@ class Test_F7(Base_Coster):
     def meso(self):
         None
 
-#minima, maxima = Test_F7.extents(30)
+minima, maxima = Test_F7.extents(30)
 #minima, maxima = MartinGaddy.extents()
 #minima, maxima = Schwefel.extents()
-minima, maxima = Viennet.extents()
+#minima, maxima = Viennet.extents()
 
-G = F3_Garden(minima, maxima)
-P = F3_Plotter(G, [0, 1])
+max_solver_runs = 990
+flies_bees = [2, 3, 2]
+params = { 'neighborhood': 'gauss' }
+Nit = 55
+Nt = 100
+history = np.zeros((Nit,4))
 
-#G.costfn = Test_F7(G)
-#G.costfn = MartinGaddy(G)
-#G.costfn = Schwefel(G)
-G.costfn = Viennet(G)
+for t in range(0, Nt):
+    G = F3_Garden(minima, maxima, flies_bees)
 
-#G.costfn.verbose = True
+    G.costfn = Test_F7(G)
+    #G.costfn = MartinGaddy(G)
+    #G.costfn = Schwefel(G)
+    #G.costfn = Viennet(G)
 
-method = 'gauss' # default is 'ball'; other options are 'cube' and 'sphere' (on rather than in)
-params = { 'neighborhood': method }
+    G.set_search_params(**params)
 
-G.set_search_params(**params)
+    solver_runs = 0
+    it = 0
+    while solver_runs < max_solver_runs:
+        solver_runs = G.iterate(max_solver_runs)
+        best_cost, best_X = G.best()
 
-for it in range(1, 101):
-    solver_runs = G.iterate()
-    best_cost, best_X = G.best()
-    #print('Iteration {:4d}: Global best = {c} @ {x}'.format(it, c=best_cost, x=best_X))
-    print('Iteration {:4d}: Global best = {c}'.format(it, c=best_cost))
+        if t == 0:
+            history[it,0] = solver_runs
+            history[it,1] = best_cost[0]
+            history[it,2] = best_cost[0] / Nt
+            history[it,3] = best_cost[0]
+        else:
+            if history[it,1] > best_cost[0]:
+                history[it,1] = best_cost[0]
+            history[it,2] = history[it,2] + best_cost[0] / Nt
+            if history[it,3] < best_cost[0]:
+                history[it,3] = best_cost[0]
 
-if len(best_cost) > 2:
-    P.pareto([0,1,2])
+        it = it + 1
+        print('Iteration {:4d}: Global best = {c}'.format(it, c=best_cost))
+        if it == Nit:
+            break
+
+with open('stats-12-6-2G.csv', 'w') as csvfile:
+    writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    for r in range(0, Nit):
+        writer.writerow(history[r,:])
