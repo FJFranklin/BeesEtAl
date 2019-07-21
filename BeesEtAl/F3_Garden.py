@@ -35,6 +35,10 @@ class F3_Garden(Base_Optimiser):
         if self.plotter is not None:
             self.plotter.new()
 
+        Nrecord_at_end = self.Nrecord + self.__evaluations_per_iteration()
+        if max_solver_runs is not None:
+            Nrecord_at_end = min(Nrecord_at_end, max_solver_runs)
+
         if self.Nflies == 0:
             if self.diverse:
                 for g in self.genders:
@@ -55,9 +59,8 @@ class F3_Garden(Base_Optimiser):
                 f.new_global_search()
         else:
             for fi in self.flies:
-                if max_solver_runs is not None:
-                    if max_solver_runs <= self.Nrecord:
-                        break
+                if self.Nrecord >= Nrecord_at_end:
+                    break
 
                 social_set = [fi]
                 for fj in self.flies:
@@ -94,17 +97,40 @@ class F3_Garden(Base_Optimiser):
 
                 chosen_few.append(gender_set[np.argsort(rank_abs)[0]])
 
-        for c in chosen_few:
-            if max_solver_runs is not None:
-                if max_solver_runs <= self.Nrecord:
+        while self.Nrecord < Nrecord_at_end:
+            for c in chosen_few:
+                if self.Nrecord >= Nrecord_at_end:
                     break
 
-            c.bees(min([self.flies_bees[1], (max_solver_runs - self.Nrecord)]), self.rmin)
+                c.bees(min([self.flies_bees[1], (Nrecord_at_end - self.Nrecord)]), self.rmin)
 
         if self.plotter is not None:
             self.plotter.done()
 
         return self.Nrecord
+
+    def transition(self, g): # not, of course, reflective of human reality
+        if np.random.rand(1) < self.trans:
+            if self.flies_bees[0] == 2:
+                if g == 'M':
+                    g = 'F'
+                else:
+                    g = 'M'
+            else:
+                if g == 'M':
+                    g = 'N'
+                elif g == 'N':
+                    g = 'F'
+                else:
+                    g = 'M'
+
+            if self.costfn.verbose:
+                print('> transition: gender -> {g} <'.format(g=g))
+
+        return g
+
+    def __evaluations_per_iteration(self):
+        return self.flies_bees[0] * len(self.genders) * len(self.orients) + self.flies_bees[1] * len(self.genders)
 
     def set_search_params(self, **kwargs):
         self._set_base_params(kwargs)

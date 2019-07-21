@@ -24,4 +24,4 @@ class Schwefel(Base_Coster):
     def meso(self):
         # Default is to not change XM and therefore have no MESO solution
         # One option is to try the experimental self.nudge()
-        self.nudge()
+        None

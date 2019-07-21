@@ -11,18 +11,6 @@ class F3_Fly(object):
         self.X           = None   # current position
         self.best_X      = None   # best personal position
 
-    def transition(self): # not, of course, reflective of human reality
-        if np.random.rand(1) < self.G.trans:
-            if self.gender == 'M':
-                self.gender = 'N'
-            elif self.gender == 'N':
-                self.gender = 'F'
-            else:
-                self.gender = 'M'
-
-            if self.G.costfn.verbose:
-                print('> transition: gender -> {g} <'.format(g=self.gender))
-
     def bees(self, count, radius):
         if self.G.costfn.verbose:
             print('==== Fly {p} (gender={g}, orientation={o}): #bees={b}, radius={r}'.format(p=self.id_no, g=self.gender, o=self.orientation, b=count, r=radius))
@@ -84,7 +72,7 @@ class F3_Fly(object):
             if self.G.plotter is not None:
                 self.G.plotter.fly(self.gender, self.X, None, self.best_X)
 
-        self.transition()
+        self.gender = self.G.transition(self.gender)
 
         return self.best_X # return the local best solution, even if old
 

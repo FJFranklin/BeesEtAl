@@ -1,6 +1,9 @@
 from mpl_toolkits.mplot3d import Axes3D
 
 import matplotlib.pyplot as plt
+from matplotlib import cm
+
+import numpy as np
 
 class Base_Plotter(object):
 
@@ -77,3 +80,29 @@ class Base_Plotter(object):
                     self.sync()
 
         return the_dominant, the_front
+
+    def surface(self, indices, Ninterval, Xref):
+        X    = np.arange(self.BO.minima[indices[0]], self.BO.maxima[indices[0]], (self.BO.maxima[indices[0]] - self.BO.minima[indices[0]]) / Ninterval)
+        Y    = np.arange(self.BO.minima[indices[1]], self.BO.maxima[indices[1]], (self.BO.maxima[indices[1]] - self.BO.minima[indices[1]]) / Ninterval)
+        X, Y = np.meshgrid(X, Y)
+        Z    = np.copy(X)
+
+        Nrow, Ncol = X.shape
+
+        XA = np.copy(Xref)
+
+        for r in range(0, Nrow):
+            for c in range(0, Ncol):
+                XA[indices[0]] = X[r,c]
+                XA[indices[1]] = Y[r,c]
+                self.BO.costfn.XA = XA
+                self.BO.costfn.evaluate_cost()
+                Z[r,c] = self.BO.costfn.cost
+
+        self._open_plot_window()
+
+        self._ax = self._fig.add_subplot(111, projection='3d')
+
+        self._ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=0, antialiased=False)
+
+        self.sync()
