@@ -204,10 +204,6 @@ class Base_Sorter(object):
 
         with open(file_name, 'w') as csvfile:
             writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-            if len(indices) > 1:
-                writer.writerow([title] + [''] * (len(cost[0]) + len(X[0]) - 1))
-                for i in range(0, len(indices)):
-                    writer.writerow([*(cost[i,:]), *(X[i,:])])
-            else:
-                writer.writerow([title] + [''] * (len(cost) + len(X) - 1))
-                writer.writerow([*cost, *X])
+            writer.writerow([title] + [''] * (len(cost[0]) + len(X[0]) - 1))
+            for i in range(0, len(indices)):
+                writer.writerow([*(cost[i,:]), *(X[i,:])])

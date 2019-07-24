@@ -6,8 +6,8 @@ from BeesEtAl.MartinGaddy import MartinGaddy
 from BeesEtAl.Schwefel    import Schwefel
 from BeesEtAl.Viennet     import Viennet
 
-test = 'Viennet'
-#test = 'Martin-Gaddy'
+#test = 'Viennet'
+test = 'Martin-Gaddy'
 #test = 'Schwefel'
 
 # These functions normalise the costs to the range 0-1 for the expanded patch plot BA_Plotter.history()
