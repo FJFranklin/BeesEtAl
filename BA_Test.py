@@ -96,6 +96,9 @@ P.save('test.png')
 # to look at the set of pareto-optimal solutions; you can choose two or three cost indices to plot
 
 if test == 'Viennet':
+    # either get pareto dominant/optimal indices; also, save solutions to a file (optional)
+    the_dominant, the_front = G.pareto('pareto.csv')
+    # or get pareto dominant/optimal indices, and plot selected (2 or 3)
     the_dominant, the_front = P.pareto([0,1,2])
     if the_dominant is not None:
         if len(the_dominant) > 0:

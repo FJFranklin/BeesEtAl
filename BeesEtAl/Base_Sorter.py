@@ -1,3 +1,5 @@
+import csv
+
 import numpy as np
 
 class Base_Sorter(object):
@@ -160,7 +162,7 @@ class Base_Sorter(object):
 
         return bDominates
 
-    def pareto(self):
+    def pareto(self, file_name=None):
         if self.Nrecord == 0:
             return None, None
 
@@ -188,7 +190,24 @@ class Base_Sorter(object):
 
             if bDominant:
                 the_dominant.append(ip)
+                if file_name is not None:
+                    self.__save('Dominant', the_dominant, file_name)
             elif bDominated == False:
                 the_front.append(ip)
+                if file_name is not None:
+                    self.__save('Optimal', the_front, file_name)
 
         return the_dominant, the_front
+
+    def __save(self, title, indices, file_name):
+        rank, cost, X = self.get_by_index(indices)
+
+        with open(file_name, 'w') as csvfile:
+            writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            if len(indices) > 1:
+                writer.writerow([title] + [''] * (len(cost[0]) + len(X[0]) - 1))
+                for i in range(0, len(indices)):
+                    writer.writerow([*(cost[i,:]), *(X[i,:])])
+            else:
+                writer.writerow([title] + [''] * (len(cost) + len(X) - 1))
+                writer.writerow([*cost, *X])
