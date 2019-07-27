@@ -45,9 +45,10 @@ class BA_Patch(object):
         if self.G.costfn.verbose:
             print('==== Patch {p}: #bees={b}, #fails={f}, cost={c}, radius={r}'.format(p=self.id_no, b=prior, f=self.Nfails, c=self.old_cost, r=self.radius))
 
-        bPatch  = True # whether we should try to plot the patch
+        bPatch  = True  # whether we should try to plot the patch
         bFirst  = True
         bFailed = True
+        bSkippy = False # if True, we've started skipping - require neighborhood adjustment
 
         Neval = 0 # number of evaluations of the cost function
 
@@ -58,7 +59,7 @@ class BA_Patch(object):
                 bPatch = False
 
             if self.try_X is not None:
-                if bFirst:
+                if bFirst and not bSkippy:
                     X = self.X_from_MESO()
                 else:
                     X = self.G.new_position_in_neighbourhood(self.X_from_MESO(), self.radius)
@@ -76,6 +77,7 @@ class BA_Patch(object):
                 if self.G.costfn.verbose:
                     print('(skip - bank 1 scout)')
                 self.G.scout.schedule(1)
+                bSkippy = True
                 continue
 
             Neval = Neval + 1

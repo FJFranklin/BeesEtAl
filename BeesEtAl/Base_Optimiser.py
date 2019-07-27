@@ -1,4 +1,5 @@
 import math
+import csv
 
 import numpy as np
 
@@ -22,6 +23,7 @@ class Base_Optimiser(Base_Sorter):
         self.method    = 'ball' # neighborhood shape: ball, sphere, cube, gauss
         self.rnudge    = 1E-2   # nudge radius - should probably be a lot smaller than 1
 
+        self.cheats     = None  # preloaded scout positions, if any
         self.scout     = Base_Scout(self)
         self.threshold = 1E-8
 
@@ -112,10 +114,29 @@ class Base_Optimiser(Base_Sorter):
         return X
 
     def new_position(self):
-        X = self.translate_from_unit_cube()
-        X = self.defaults * (1 - self.mask) + self.mask * X
+        if self.cheats is not None:
+            X = self.cheats[0,:]
+            if len(self.cheats) > 1:
+                self.cheats = np.delete(self.cheats, 0, axis=0)
+            else:
+                self.cheats = None
+        else:
+            X = self.translate_from_unit_cube()
+            X = self.defaults * (1 - self.mask) + self.mask * X
 
         return X
+
+    def preload(self, file_name):
+        with open(file_name, newline='') as csvfile:
+            reader = csv.reader(csvfile)
+            for row in reader:
+                values = list(map(float, row))
+                X = np.asarray(values)
+                if self.cheats is None:
+                    self.cheats = np.asarray([X])
+                else:
+                    self.cheats = np.append(self.cheats, [X], axis=0)
+        return len(self.cheats)
 
     def global_best(self):
         return self.best()[0]
