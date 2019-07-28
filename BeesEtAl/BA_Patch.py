@@ -109,7 +109,7 @@ class BA_Patch(object):
                     best_XM   = XM
                     best_cost = cost
                     bFirst    = False
-                elif self.G.compare(XA, self.best_X):
+                elif self.G.compare(XA, best_X):
                     best_X    = X
                     best_XA   = XA
                     best_XM   = XM

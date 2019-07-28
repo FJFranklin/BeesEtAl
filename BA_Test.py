@@ -1,3 +1,5 @@
+import argparse
+
 import numpy as np
 
 from BeesEtAl.BA_Garden   import BA_Garden
@@ -6,9 +8,27 @@ from BeesEtAl.MartinGaddy import MartinGaddy
 from BeesEtAl.Schwefel    import Schwefel
 from BeesEtAl.Viennet     import Viennet
 
-#test = 'Viennet'
-test = 'Martin-Gaddy'
-#test = 'Schwefel'
+parser = argparse.ArgumentParser(description="Simple tests for the Bees Algorithm.")
+
+parser.add_argument('--function',     help='Function to be optimised [Martin-Gaddy].', default='Martin-Gaddy', choices=['Martin-Gaddy', 'Schwefel', 'Viennet'])
+parser.add_argument('--iterations',   help='How many iterations to do [100].', default=100, type=int)
+parser.add_argument('--neighborhood', help='Shape of neighborhood [gauss].', default='gauss', choices=['gauss', 'cube', 'ball', 'sphere'])
+parser.add_argument('--fail-at',      help='Abandon patch at specified number of failures [6].', default=6, type=int)
+parser.add_argument('--non-dynamic',  help='Do not update patch before all new bees have been evaluated.', action='store_true')
+parser.add_argument('--history-out',  help='Save expanded patch plot history to specified file.', dest='out', type=str, default=None)
+
+args = parser.parse_args()
+
+test = args.function
+save = args.out
+hood = args.neighborhood
+fail = args.fail_at
+Nit  = args.iterations
+
+if args.non_dynamic:
+    bDynamic = False
+else:
+    bDynamic = True
 
 # These functions normalise the costs to the range 0-1 for the expanded patch plot BA_Plotter.history()
 
@@ -55,11 +75,9 @@ P = BA_Plotter(G, plotaxes)
 #G.set_mask_and_defaults([1,0], [0,6])
 
 # initial radius, cooling factor, number of failures allowed, etc.
-method = 'gauss' # default is 'ball'; other options are 'cube' and 'sphere' (on rather than in)
-Nfail  = 6       # i.e., stops at 6th failure
 rf     = 0.01    # smallest patch radius
-r0, sf = G.initial_radius_and_shrinking(Nfail, rf, method) # or set your own initial radius & shrinking factor
-params = { 'radius': r0, 'shrink': sf, 'fail_at': Nfail, 'neighborhood': method, 'dynamic': True }
+r0, sf = G.initial_radius_and_shrinking(fail, rf, hood) # or set your own initial radius & shrinking factor
+params = { 'radius': r0, 'shrink': sf, 'fail_at': fail, 'neighborhood': hood, 'dynamic': bDynamic }
 
 G.set_search_params(**params)
 
@@ -79,7 +97,7 @@ if test == 'Viennet':
 
 # ==== We're ready to optimise ====
 
-for it in range(1, 101):
+for it in range(1, (Nit+1)):
     solver_runs = G.iterate()
     best_cost, best_X = G.best()
     print('Iteration {:4d}: Global best = {c} @ {x}'.format(it, c=best_cost, x=best_X))
@@ -90,21 +108,11 @@ for it in range(1, 101):
 
 G.flush_history()
 P.history((45, 315), 'blue', norm_fn)
-P.save('test.png')
+if save is not None:
+    P.save(save)
 
 # for multi-objective optimisation, i.e., when the cost is not a scalar, it's more interesting
 # to look at the set of pareto-optimal solutions; you can choose two or three cost indices to plot
 
 if test == 'Viennet':
-    # either get pareto dominant/optimal indices; also, save solutions to a file (optional)
-    the_dominant, the_front = G.pareto('pareto.csv')
-    # or get pareto dominant/optimal indices, and plot selected (2 or 3)
-    the_dominant, the_front = P.pareto([0,1,2])
-    if the_dominant is not None:
-        if len(the_dominant) > 0:
-            rank, cost, X = G.get_by_index(the_dominant)
-            print('Pareto-dominant solution: cost = {c} @ {x}'.format(c=cost, x=X))
-    if the_front is not None:
-        if len(the_front) > 0:
-            rank, cost, X = G.get_by_index(the_front)
-            print('Pareto-optimal solutions: cost = {c} @ {x}'.format(c=cost, x=X))
+    P.pareto([0,1,2])

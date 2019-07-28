@@ -1,16 +1,40 @@
+import argparse
 import csv
+import sys
 
 import numpy as np
 
-from BeesEtAl.Gholami     import Gholami_TestFunction_Extents, Gholami_TestFunction_Coster
+from BeesEtAl.Gholami   import Gholami_TestFunction_Extents, Gholami_TestFunction_Coster
+from BeesEtAl.BA_Garden import BA_Garden
+from BeesEtAl.F3_Garden import F3_Garden
 
-from BeesEtAl.BA_Garden   import BA_Garden
-from BeesEtAl.F3_Garden   import F3_Garden
+parser = argparse.ArgumentParser(description="Runs the twelve Gholami test functions for convergence statistics.")
 
-Ndim     = 30    # Number of dimensions for solution space
-Nt       = 100   # How many times to average this over
-duration = 500   # Maximum number of cost function evaluations
-e_per_it = 24    # Evalutions per iteration
+parser.add_argument('--dimension', help='What dimension of space should be used [30].',            default=30,    type=int)
+parser.add_argument('--duration',  help='Duration, i.e., how many evaluations to end at [10000].', default=10000, type=int)
+parser.add_argument('--repeats',   help='How many times to repeat each case [100].',               default=100,   type=int)
+parser.add_argument('--plot',      help='Create a surface plot of the specified function (1-12).', default=0,     type=int)
+
+args = parser.parse_args()
+
+Ndim     = args.dimension
+Nt       = args.repeats
+duration = args.duration
+
+if args.plot > 0:
+    from BeesEtAl.Base_Optimiser import Base_Optimiser
+    from BeesEtAl.Base_Plotter   import Base_Plotter
+
+    if args.plot <= 12:
+        minima, maxima = Gholami_TestFunction_Extents(args.plot, Ndim)
+        BO = Base_Optimiser(minima, maxima)
+        P  = Base_Plotter(BO, None)
+        X0 = np.zeros(Ndim)
+        BO.costfn = Gholami_TestFunction_Coster(args.plot, BO)
+        P.surface([0,1], 100, X0)
+        P.sync(10)
+
+    sys.exit()
 
 cases    = [
     ('F3', [ 6, 18]),
@@ -20,6 +44,7 @@ cases    = [
     ('F3', [ 1,  4,  3]),
     ('BA', [ 6,  6,  3,  3,  6]) ]
 
+e_per_it = 24    # Evalutions per iteration
 Ncol     = 13
 Nrow     = int(duration / e_per_it)
 max_runs = Nrow * e_per_it

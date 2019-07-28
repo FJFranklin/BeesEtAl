@@ -231,8 +231,12 @@ class F10(Base_Coster):
     def map_to_solution_space(self, X):
         return X
 
+    @staticmethod
+    def rms(X):
+        return np.sqrt(X.dot(X) / len(X))
+
     def evaluate_cost(self):
-        self.cost = np.exp(1) + 20 * (1 - np.exp(-np.linalg.norm(self.XA) / 5)) - np.exp(sum(np.cos(2 * np.pi * self.XA)) / len(self.XA))
+        self.cost = np.exp(1) + 20 * (1 - np.exp(-F10.rms(self.XA) / 5)) - np.exp(sum(np.cos(2 * np.pi * self.XA)) / len(self.XA))
 
     def meso(self):
         None
