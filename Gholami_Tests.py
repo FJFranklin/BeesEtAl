@@ -10,16 +10,18 @@ from BeesEtAl.F3_Garden import F3_Garden
 
 parser = argparse.ArgumentParser(description="Runs the twelve Gholami test functions for convergence statistics.")
 
-parser.add_argument('--dimension', help='What dimension of space should be used [30].',            default=30,    type=int)
-parser.add_argument('--duration',  help='Duration, i.e., how many evaluations to end at [10000].', default=10000, type=int)
-parser.add_argument('--repeats',   help='How many times to repeat each case [100].',               default=100,   type=int)
-parser.add_argument('--plot',      help='Create a surface plot of the specified function (1-12).', default=0,     type=int)
+parser.add_argument('--dimension', help='What dimension of space should be used [30].',                     default=30,    type=int)
+parser.add_argument('--duration',  help='Duration, i.e., how many evaluations to end at [10000].',          default=10000, type=int)
+parser.add_argument('--suppress',  help='In case of F3, suppress diversity for specified no. evaluations.', default=0,     type=int)
+parser.add_argument('--repeats',   help='How many times to repeat each case [100].',                        default=100,   type=int)
+parser.add_argument('--plot',      help='Create a surface plot of the specified function (1-12).',          default=0,     type=int)
 
 args = parser.parse_args()
 
 Ndim     = args.dimension
 Nt       = args.repeats
 duration = args.duration
+suppress = args.suppress
 
 if args.plot > 0:
     from BeesEtAl.Base_Optimiser import Base_Optimiser
@@ -37,12 +39,13 @@ if args.plot > 0:
     sys.exit()
 
 cases    = [
-    ('F3', [ 6, 18]),
-    ('F3', [12, 12]),
-    ('F3', [18,  6]),
-    ('F3', [ 2,  6,  2]),
-    ('F3', [ 1,  4,  3]),
-    ('BA', [ 6,  6,  3,  3,  6]) ]
+    ('F3', [ 1,  9,  2]) ]
+#    ('F3', [ 6, 18]),
+#    ('F3', [12, 12]),
+#    ('F3', [18,  6]),
+#    ('F3', [ 2,  6,  2]),
+#    ('F3', [ 1,  4,  3]),
+#    ('BA', [ 6,  6,  3,  3,  6]) ]
 
 e_per_it = 24    # Evalutions per iteration
 Ncol     = 13
@@ -87,7 +90,11 @@ for c in cases:
             solver_runs = 0
             it = 0
             while solver_runs < max_runs:
-                solver_runs = G.iterate(max_runs)
+                if solver == 'F3' and solver_runs < suppress:
+                    solver_runs = G.iterate(max_runs, unisex=True)
+                else:
+                    solver_runs = G.iterate(max_runs)
+
                 best_cost, best_X = G.best()
 
                 if t == 0:

@@ -11,7 +11,7 @@ class F3_Garden(Base_Optimiser):
         self.flies_bees  = flies_bees
 
         if len(self.flies_bees) == 3:
-            if self.flies_bees[0] == 2:
+            if self.flies_bees[2] == 2:
                 self.genders = ['F', 'M']
                 self.orients = [['M'], ['F'], ['F', 'M']]
             else:
@@ -119,7 +119,7 @@ class F3_Garden(Base_Optimiser):
 
     def transition(self, g): # not, of course, reflective of human reality
         if np.random.rand(1) < self.trans:
-            if self.flies_bees[0] == 2:
+            if self.flies_bees[2] == 2:
                 if g == 'M':
                     g = 'F'
                 else:
