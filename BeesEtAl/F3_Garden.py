@@ -31,9 +31,14 @@ class F3_Garden(Base_Optimiser):
         self.Nflies = 0
         self.flies  = []
 
-    def iterate(self, max_solver_runs=None):
+    def iterate(self, max_solver_runs=None, **kwargs):
         if self.plotter is not None:
             self.plotter.new()
+
+        if 'unisex' in kwargs:    # option to temporarily suppress gender & orientation
+            unisex = kwargs['unisex']
+        else:
+            unisex = not self.diverse
 
         Nrecord_at_end = self.Nrecord + self.__evaluations_per_iteration()
         if max_solver_runs is not None:
@@ -66,7 +71,7 @@ class F3_Garden(Base_Optimiser):
                 for fj in self.flies:
                     if fi.id_no == fj.id_no:
                         continue
-                    if fj.gender in fi.orientation:
+                    if (fj.gender in fi.orientation) or unisex:
                         social_set.append(fj)
 
                 rank_abs = []
@@ -87,7 +92,7 @@ class F3_Garden(Base_Optimiser):
         for g in self.genders:
             gender_set = []
             for f in self.flies:
-                if f.gender == g:
+                if (f.gender == g) or unisex:
                     gender_set.append(f)
 
             if len(gender_set) > 0:
@@ -96,6 +101,9 @@ class F3_Garden(Base_Optimiser):
                     rank_abs.append(self.lookup(s.best_X)[0])
 
                 chosen_few.append(gender_set[np.argsort(rank_abs)[0]])
+
+            if unisex:
+                break
 
         while self.Nrecord < Nrecord_at_end:
             for c in chosen_few:

@@ -33,6 +33,7 @@ parser.add_argument('-o', '--optimiser', help='Select optimiser [BA].',         
 parser.add_argument('--dimension',       help='What dimension of space should be used [30].', default=30,   type=int)
 parser.add_argument('--iterations',      help='How many iterations to do [100].',             default=100,  type=int)
 parser.add_argument('--no-plot',         help='Do not plot.',                                 action='store_true')
+parser.add_argument('--suppress',        help='In case of F3, suppress diversity.',           action='store_true')
 
 args = parser.parse_args()
 
@@ -42,6 +43,8 @@ else:
     bPlot = True
 
 P = None
+
+bSuppress = False
 
 minima, maxima = Test_F7.extents(args.dimension)
 
@@ -63,7 +66,7 @@ if args.optimiser == 'BA':
 elif args.optimiser == 'F3':
     from BeesEtAl.F3_Garden import F3_Garden
 
-    G = F3_Garden(minima, maxima, [5,5])
+    G = F3_Garden(minima, maxima, [1,6,3])
 
     if bPlot:
         from BeesEtAl.F3_Plotter import F3_Plotter
@@ -72,10 +75,17 @@ elif args.optimiser == 'F3':
     method = 'gauss' # default is 'ball'; other options are 'cube' and 'sphere' (on rather than in)
     params = { 'neighborhood': method }
 
+    if args.suppress:
+        bSuppress = True
+
 G.costfn = Test_F7(G)
 G.set_search_params(**params)
 
 for it in range(1, 1 + args.iterations):
-    solver_runs = G.iterate()
+    if bSuppress:
+        solver_runs = G.iterate(unisex=True)
+    else:
+        solver_runs = G.iterate()
+
     best_cost, best_X = G.best()
     print('Iteration {:4d}: Global best = {c} @ {x}'.format(it, c=best_cost, x=best_X))
