@@ -27,7 +27,7 @@ class Test_F7(Base_Coster):
     def meso(self):
         None
 
-parser = argparse.ArgumentParser(description="Runs the twelve Gholami test functions for convergence statistics.")
+parser = argparse.ArgumentParser(description="Test/Demo script for plotting/comparing BA/F3 with a noisy function (Gholami F7).")
 
 parser.add_argument('-o', '--optimiser', help='Select optimiser [BA].',                       default='BA', choices=['BA', 'F3'])
 parser.add_argument('--dimension',       help='What dimension of space should be used [30].', default=30,   type=int)
