@@ -29,11 +29,12 @@ class Test_F7(Base_Coster):
 
 parser = argparse.ArgumentParser(description="Test/Demo script for plotting/comparing BA/F3 with a noisy function (Gholami F7).")
 
-parser.add_argument('-o', '--optimiser', help='Select optimiser [BA].',                       default='BA', choices=['BA', 'F3'])
-parser.add_argument('--dimension',       help='What dimension of space should be used [30].', default=30,   type=int)
-parser.add_argument('--iterations',      help='How many iterations to do [100].',             default=100,  type=int)
-parser.add_argument('--no-plot',         help='Do not plot.',                                 action='store_true')
-parser.add_argument('--suppress',        help='In case of F3, suppress diversity.',           action='store_true')
+parser.add_argument('-o', '--optimiser', help='Select optimiser [BA].',                            default='BA', choices=['BA', 'F3'])
+parser.add_argument('--dimension',       help='What dimension of space should be used [30].',      default=30,   type=int)
+parser.add_argument('--iterations',      help='How many iterations to do [100].',                  default=100,  type=int)
+parser.add_argument('--no-plot',         help='Do not plot.',                                      action='store_true')
+parser.add_argument('--suppress',        help='In case of F3, suppress diversity.',                action='store_true')
+parser.add_argument('--attraction',      help='In case of F3, use exponential or Gaussian [exp].', default='exp', choices=['exp', 'gauss'])
 
 args = parser.parse_args()
 
@@ -73,7 +74,7 @@ elif args.optimiser == 'F3':
         P = F3_Plotter(G, [0, 1])
 
     method = 'gauss' # default is 'ball'; other options are 'cube' and 'sphere' (on rather than in)
-    params = { 'neighborhood': method }
+    params = { 'neighborhood': method, 'attraction': args.attraction }
 
     if args.suppress:
         bSuppress = True

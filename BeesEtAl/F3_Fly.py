@@ -2,21 +2,22 @@ import numpy as np
 
 class F3_Fly(object):
 
-    def __init__(self, garden, id_no, gender, orientation):
+    def __init__(self, garden, id_no, gender, orientation, radius):
         self.G           = garden      # the F3_Garden object
         self.id_no       = id_no       # a reference number to identify this fly
         self.gender      = gender      # 'M', 'N' or 'F'
         self.orientation = orientation # list of one or more genders
+        self.bee_radius  = radius      # patch size
 
         self.X           = None   # current position
         self.best_X      = None   # best personal position
 
-    def bees(self, count, radius):
+    def bees(self, count):
         if self.G.costfn.verbose:
-            print('==== Fly {p} (gender={g}, orientation={o}): #bees={b}, radius={r}'.format(p=self.id_no, g=self.gender, o=self.orientation, b=count, r=radius))
+            print('==== Fly {p} (gender={g}, orientation={o}): #bees={b}, radius={r}'.format(p=self.id_no, g=self.gender, o=self.orientation, b=count, r=self.bee_radius))
 
         for b in range(0, count):
-            new_X = self.G.new_position_in_neighbourhood(self.best_X, radius)
+            new_X = self.G.new_position_in_neighbourhood(self.best_X, self.G.rand_exp(self.bee_radius), 'sphere')
 
             if self.G.costfn.calculate_cost(new_X) is not None:
                 if self.G.plotter is not None:
@@ -27,6 +28,8 @@ class F3_Fly(object):
                         print('(updating personal best)')
                     if self.G.plotter is not None:
                         self.G.plotter.fly(self.gender, self.G.costfn.XA, self.X, None)
+                    self.bee_radius = self.bee_radius * 0.99
+
                     self.best_X = self.G.costfn.XA
                     self.X      = self.G.costfn.XA
 
@@ -48,9 +51,7 @@ class F3_Fly(object):
 
             for f in range(1, len(flies)):
                 if ranks[f] < ranks[0]: # a better fly than self-fly
-                    dX    = flies[f].best_X - self.X
-                    attr  = np.exp2(-np.linalg.norm(self.G.translate_to_unit_cube(dX)) / radius)
-                    new_X = new_X + weight[f] * attr * dX
+                    new_X = new_X + weight[f] * self.G.attraction(flies[f].best_X - self.X, radius)
 
             new_X = new_X + self.X
 

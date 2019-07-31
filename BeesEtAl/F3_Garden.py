@@ -25,11 +25,13 @@ class F3_Garden(Base_Optimiser):
             self.orients = [['N']]
             self.diverse = False
 
-        self.rmin   = 0.01        # search radius - minimum
-        self.rmax   = self.principal_radius(self.flies_bees[0] * len(self.genders) * len(self.orients))
+        self.rmin    = 0.01       # search radius - minimum
+        self.rmax    = self.principal_radius(self.flies_bees[0] * len(self.genders) * len(self.orients))
 
-        self.Nflies = 0
-        self.flies  = []
+        self.Nflies  = 0
+        self.flies   = []
+
+        self.attract = 'exp'
 
     def iterate(self, max_solver_runs=None, **kwargs):
         if self.plotter is not None:
@@ -50,7 +52,7 @@ class F3_Garden(Base_Optimiser):
                     for o in self.orients:
                         for i in range(0, self.flies_bees[0]):
                             self.Nflies = self.Nflies + 1
-                            self.flies.append(F3_Fly(self, self.Nflies, g, o))
+                            self.flies.append(F3_Fly(self, self.Nflies, g, o, self.rmax))
             else:
                 self.Nflies = self.flies_bees[0]
 
@@ -110,12 +112,19 @@ class F3_Garden(Base_Optimiser):
                 if self.Nrecord >= Nrecord_at_end:
                     break
 
-                c.bees(min([self.flies_bees[1], (Nrecord_at_end - self.Nrecord)]), self.rmin)
+                c.bees(min([self.flies_bees[1], (Nrecord_at_end - self.Nrecord)]))
 
         if self.plotter is not None:
             self.plotter.done()
 
         return self.Nrecord
+
+    def attraction(self, dX, radius):
+        if self.attract == 'gauss':
+            attr = dX * np.exp2(1 - (np.linalg.norm(self.translate_to_unit_cube(dX)) / radius)**2) 
+        else:
+            attr = dX * np.exp2(-np.linalg.norm(self.translate_to_unit_cube(dX)) / radius)
+        return attr
 
     def transition(self, g): # not, of course, reflective of human reality
         if np.random.rand(1) < self.trans:
@@ -142,3 +151,6 @@ class F3_Garden(Base_Optimiser):
 
     def set_search_params(self, **kwargs):
         self._set_base_params(kwargs)
+
+        if 'attraction' in kwargs: # 'exp' or 'gauss'
+            self.attract = kwargs['attraction']

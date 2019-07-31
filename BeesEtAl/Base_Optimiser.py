@@ -63,6 +63,12 @@ class Base_Optimiser(Base_Sorter):
 
         return self.minima + (self.maxima - self.minima) * X
 
+    def rand_exp(self, scale):
+        r = 0
+        while r < self.threshold:
+            r = np.random.exponential(scale)
+        return r
+
     def n_cube(self):
         # Ndim dimensions in range -1..1
         norm = 0
