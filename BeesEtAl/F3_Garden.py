@@ -52,12 +52,12 @@ class F3_Garden(Base_Optimiser):
                     for o in self.orients:
                         for i in range(0, self.flies_bees[0]):
                             self.Nflies = self.Nflies + 1
-                            self.flies.append(F3_Fly(self, self.Nflies, g, o, self.rmax))
+                            self.flies.append(F3_Fly(self, self.Nflies, g, o, self.rmin))
             else:
                 self.Nflies = self.flies_bees[0]
 
                 for i in range(0, self.Nflies):
-                    self.flies.append(F3_Fly(self, i + 1, self.genders[0], self.orients[0]))
+                    self.flies.append(F3_Fly(self, i + 1, self.genders[0], self.orients[0], self.rmin))
 
             self.scout.schedule(self.Nflies)
             self.scout.evaluate(self.Nflies)

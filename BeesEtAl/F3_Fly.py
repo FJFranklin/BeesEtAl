@@ -1,5 +1,7 @@
 import numpy as np
 
+from .Base_Automaton import Base_Automaton
+
 class F3_Fly(object):
 
     def __init__(self, garden, id_no, gender, orientation, radius):
@@ -9,6 +11,8 @@ class F3_Fly(object):
         self.orientation = orientation # list of one or more genders
         self.bee_radius  = radius      # patch size
 
+        self.automaton   = Base_Automaton(20)
+
         self.X           = None   # current position
         self.best_X      = None   # best personal position
 
@@ -17,7 +21,11 @@ class F3_Fly(object):
             print('==== Fly {p} (gender={g}, orientation={o}): #bees={b}, radius={r}'.format(p=self.id_no, g=self.gender, o=self.orientation, b=count, r=self.bee_radius))
 
         for b in range(0, count):
-            new_X = self.G.new_position_in_neighbourhood(self.best_X, self.G.rand_exp(self.bee_radius), 'sphere')
+            cell  = self.automaton.cell()
+            if cell == 0:
+                new_X = self.G.new_position_in_neighbourhood(self.best_X, self.bee_radius, 'gauss')
+            else:
+                new_X = self.G.new_position_in_neighbourhood(self.best_X, self.bee_radius * cell, 'sphere')
 
             if self.G.costfn.calculate_cost(new_X) is not None:
                 if self.G.plotter is not None:
@@ -28,10 +36,13 @@ class F3_Fly(object):
                         print('(updating personal best)')
                     if self.G.plotter is not None:
                         self.G.plotter.fly(self.gender, self.G.costfn.XA, self.X, None)
-                    self.bee_radius = self.bee_radius * 0.99
 
                     self.best_X = self.G.costfn.XA
                     self.X      = self.G.costfn.XA
+
+                    self.automaton.reward(cell)
+                else:
+                    self.automaton.punish(cell)
 
     def new_local_search(self, flies, ranks, radius):
         if self.G.costfn.verbose:
