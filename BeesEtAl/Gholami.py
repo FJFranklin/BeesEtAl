@@ -144,7 +144,7 @@ class F6(Base_Coster):
         return X
 
     def evaluate_cost(self):
-        self.cost = sum(np.power(self.XA + 0.5, 2))
+        self.cost = sum(np.floor(np.power(self.XA + 0.5, 2)))
 
     def meso(self):
         None
