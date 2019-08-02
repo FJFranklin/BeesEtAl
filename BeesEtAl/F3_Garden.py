@@ -25,13 +25,17 @@ class F3_Garden(Base_Optimiser):
             self.orients = [['N']]
             self.diverse = False
 
-        self.rmin    = 0.01       # search radius - minimum
-        self.rmax    = self.principal_radius(self.flies_bees[0] * len(self.genders) * len(self.orients))
-
         self.Nflies  = 0
         self.flies   = []
 
-        self.attract = 'exp'
+        self.fly_rmin   = 0.01    # search radius - minimum
+        self.fly_rmax   = self.principal_radius(self.flies_bees[0] * len(self.genders) * len(self.orients))
+
+        self.bee_radius = 0.01
+        self.bee_shells = 20
+
+        self.jitter     = None    # neighborhood size following firefly movement, or None for radius / 2
+        self.attract    = 'exp'   # nature of attraction, i.e., 'exp' for exp(-r), 'gauss' for exp(-r2)
 
     def iterate(self, max_solver_runs=None, **kwargs):
         if self.plotter is not None:
@@ -52,12 +56,12 @@ class F3_Garden(Base_Optimiser):
                     for o in self.orients:
                         for i in range(0, self.flies_bees[0]):
                             self.Nflies = self.Nflies + 1
-                            self.flies.append(F3_Fly(self, self.Nflies, g, o, self.rmin))
+                            self.flies.append(F3_Fly(self, self.Nflies, g, o))
             else:
                 self.Nflies = self.flies_bees[0]
 
                 for i in range(0, self.Nflies):
-                    self.flies.append(F3_Fly(self, i + 1, self.genders[0], self.orients[0], self.rmin))
+                    self.flies.append(F3_Fly(self, i + 1, self.genders[0], self.orients[0]))
 
             self.scout.schedule(self.Nflies)
             self.scout.evaluate(self.Nflies)
@@ -83,11 +87,14 @@ class F3_Garden(Base_Optimiser):
                 rank_set = np.asarray(rank_abs)
                 rank_set[np.argsort(rank_abs)] = range(0, len(rank_abs))
 
-                radius = self.rmin
+                radius = self.fly_rmin
                 if len(rank_set) > 1:
-                    radius = radius * (self.rmax / self.rmin)**(rank_set[0] / (len(rank_set) - 1))
+                    radius = radius * (self.fly_rmax / self.fly_rmin)**(rank_set[0] / (len(rank_set) - 1))
 
-                fi.new_local_search(social_set, rank_set, radius)
+                if self.jitter is None:
+                    fi.new_local_search(social_set, rank_set, radius, radius / 2)
+                else:
+                    fi.new_local_search(social_set, rank_set, radius, self.jitter)
 
         chosen_few = []
 
@@ -152,5 +159,15 @@ class F3_Garden(Base_Optimiser):
     def set_search_params(self, **kwargs):
         self._set_base_params(kwargs)
 
-        if 'attraction' in kwargs: # 'exp' or 'gauss'
+        if 'attraction' in kwargs:     # 'exp' or 'gauss'
             self.attract = kwargs['attraction']
+        if 'bee-radius' in kwargs:     # > 0
+            self.bee_radius = kwargs['bee-radius']
+        if 'bee-shells' in kwargs:     # integer > 0
+            self.bee_shells = kwargs['bee-shells']
+        if 'fly-radius-min' in kwargs: # > 0
+            self.fly_rmin = kwargs['fly-radius-min']
+        if 'fly-radius-max' in kwargs: # > 0
+            self.fly_rmax = kwargs['fly-radius-max']
+        if 'jitter' in kwargs:         # > 0
+            self.jitter = kwargs['jitter']
