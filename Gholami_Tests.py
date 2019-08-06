@@ -10,31 +10,37 @@ from BeesEtAl.F3_Garden import F3_Garden
 
 parser = argparse.ArgumentParser(description="Runs the twelve Gholami test functions for convergence statistics.")
 
-parser.add_argument('--dimension',     help='What dimension of space should be used [30].',                default=30,    type=int)
-parser.add_argument('--duration',      help='Duration, i.e., how many evaluations to end at [10000].',     default=10000, type=int)
-parser.add_argument('--repeats',       help='How many times to repeat each case [100].',                   default=100,   type=int)
-parser.add_argument('--plot',          help='Create a surface plot of the specified function (1-12).',     default=0,     type=int)
-parser.add_argument('-t', '--test',    help='Test specified function (1-12).',                             default=0,     type=int)
-parser.add_argument('--f3-pure',       help='Pure firefly case.',                                          action='store_true')
-parser.add_argument('--f3-suppress',   help='F3: Suppress diversity for specified no. evaluations.',       default=0,     type=int)
-parser.add_argument('--f3-bee-shells', help='F3: Specify number of bee shells [20].',                      default=20,    type=int)
-parser.add_argument('--f3-bee-radius', help='F3: Specify radius of inner bee shell [0.01].',               default=0.01,  type=float)
-parser.add_argument('--f3-min-radius', help='F3: Specify minimum attraction radius for fireflies [0.01].', default=0.01,  type=float)
-parser.add_argument('--f3-max-radius', help='F3: Specify maximum attraction radius for fireflies.',        default=None,  type=float)
-parser.add_argument('--f3-jitter',     help='F3: Specify neighborhood radius for fireflies.',              default=None,  type=float)
-parser.add_argument('--f3-attraction', help='F3: Specify exponential or Gaussian attraction [exp].',       default='exp', choices=['exp', 'gauss'])
+parser.add_argument('--dimension',     help='What dimension of space should be used [30].',                  default=30,    type=int)
+parser.add_argument('--duration',      help='Duration, i.e., how many evaluations to end at [10000].',       default=10000, type=int)
+parser.add_argument('--repeats',       help='How many times to repeat each case [100].',                     default=100,   type=int)
+parser.add_argument('--plot',          help='Create a surface plot of the specified function (1-12).',       default=0,     type=int)
+parser.add_argument('--prefix',        help='Prefix for output file names.',                                 default='',    type=str)
+parser.add_argument('-t', '--test',    help='Test specified function (1-12).',                               default=0,     type=int, nargs='+')
+parser.add_argument('--ba-pure',       help='BA: Pure bees algorithm case (6/6/3/3+6).',                     action='store_true')
+parser.add_argument('--f3-pure',       help='F3: Pure firefly case (24+0).',                                 action='store_true')
+parser.add_argument('--f3-2G',         help='F3: Two-gender case only (2+6;2).',                             action='store_true')
+parser.add_argument('--f3-3G',         help='F3: Three-gender case only (1+4;3).',                           action='store_true')
+parser.add_argument('--f3-standard',   help='F3: One-gender case only (6+18).',                              action='store_true')
+parser.add_argument('--f3-suppress',   help='F3: Suppress diversity for specified no. evaluations (1+9;2).', default=0,     type=int)
+parser.add_argument('--f3-bee-shells', help='F3: Specify number of bee shells [20].',                        default=20,    type=int)
+parser.add_argument('--f3-bee-radius', help='F3: Specify radius of inner bee shell [0.01].',                 default=0.01,  type=float)
+parser.add_argument('--f3-min-radius', help='F3: Specify minimum attraction radius for fireflies [0.01].',   default=0.01,  type=float)
+parser.add_argument('--f3-max-radius', help='F3: Specify maximum attraction radius for fireflies.',          default=None,  type=float)
+parser.add_argument('--f3-jitter',     help='F3: Specify neighborhood radius for fireflies.',                default=None,  type=float)
+parser.add_argument('--f3-attraction', help='F3: Specify exponential or Gaussian attraction [exp].',         default='exp', choices=['exp', 'gauss'])
 
 args = parser.parse_args()
 
 Ndim     = args.dimension
 Nt       = args.repeats
 duration = args.duration
+prefix   = args.prefix
 suppress = args.f3_suppress
 
 if args.test == 0:
     test_set = range(1, 13)
 else:
-    test_set = [args.test]
+    test_set = args.test
 
 if args.plot > 0:
     from BeesEtAl.Base_Optimiser import Base_Optimiser
@@ -54,15 +60,25 @@ if args.plot > 0:
 if args.f3_pure:
     cases    = [
         ('F3', [ 24, 0]) ]
+elif args.ba_pure:
+    cases    = [
+        ('BA', [ 6,  6,  3,  3,  6]) ]
+elif args.f3_standard:
+    cases    = [
+        ('F3', [ 6, 18]) ]
+elif args.f3_2G:
+    cases    = [
+        ('F3', [ 2,  6,  2]) ]
+elif args.f3_3G:
+    cases    = [
+        ('F3', [ 1,  4,  3]) ]
+elif suppress > 0:
+    cases    = [
+        ('F3', [ 1,  9,  2]) ]
 else:
     cases    = [
-        ('F3', [ 6, 18]),
         ('F3', [12, 12]),
-        ('F3', [18,  6]),
-        ('F3', [ 2,  6,  2]),
-        ('F3', [ 1,  4,  3]) ]
-#    ('BA', [ 6,  6,  3,  3,  6]) ]
-#    ('F3', [ 1,  9,  2]) ]
+        ('F3', [18,  6]) ]
 
 e_per_it = 24    # Evalutions per iteration
 Ncol     = 13
@@ -78,7 +94,7 @@ for c in cases:
     file_name = solver
     for fb in flies_bees:
         file_name = file_name + '-' + str(fb)
-    file_name = file_name + '.csv'
+    file_name = prefix + file_name + '.csv'
 
     for number in test_set:
         minima, maxima = Gholami_TestFunction_Extents(number, Ndim)
