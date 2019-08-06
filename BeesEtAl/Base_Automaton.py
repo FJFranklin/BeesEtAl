@@ -2,7 +2,7 @@ import numpy as np
 
 class Base_Automaton(object):
 
-    def __init__(self, count, reward=0.10, punish=0.05):
+    def __init__(self, count, reward=0.10, punish=0.001):
         self.count    = count
         self.__reward = reward
         self.__punish = punish
@@ -32,3 +32,7 @@ class Base_Automaton(object):
                 self.cells[p] = self.cells[p] * (1 - self.__punish) + self.__punish / (self.count - 1)
 
         self.cells[0] = 1 - sum(self.cells[1:])
+
+    def summarise(self):
+        print(np.array2string(self.cells * 100 * self.count, precision=2, suppress_small=True, max_line_width=180), end=' ')
+        

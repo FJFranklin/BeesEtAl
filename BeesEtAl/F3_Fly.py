@@ -10,25 +10,47 @@ class F3_Fly(object):
         self.gender      = gender      # 'M', 'N' or 'F'
         self.orientation = orientation # list of one or more genders
 
-        self.automaton   = Base_Automaton(2 + self.G.bee_shells)
+        self.automaton   = Base_Automaton(2 + self.G.bee_shells, self.G.bee_reward, self.G.bee_punish)
 
         self.X           = None   # current position
         self.best_X      = None   # best personal position
+        self.best_XM     = None   # associated MESO position
+
+    def X_from_MESO(self):
+        indices = []
+
+        if np.array_equal(self.best_X, self.best_XM):
+            X = self.best_X
+        else:
+            X = np.copy(self.best_X)
+
+            for ix in range(0, len(X)):
+                if X[ix] != self.best_XM[ix]:
+                    if np.random.rand(1) < 0.5:
+                        X[ix] = self.best_XM[ix]
+                        indices.append(ix)
+
+        if self.G.costfn.verbose:
+            print(' >8< Bee: MESO = {i}'.format(i=indices))
+
+        return X
 
     def bees(self, count):
         if self.G.costfn.verbose:
             print('==== Fly {p} (gender={g}, orientation={o}): #bees={b}, radius={r}'.format(p=self.id_no, g=self.gender, o=self.orientation, b=count, r=self.G.bee_radius))
 
         for b in range(0, count):
+            meso_X = self.X_from_MESO()
+
             cell  = self.automaton.cell()
             if cell == 0:
-                new_X = self.G.new_position_in_neighbourhood(self.best_X, self.G.bee_radius, 'gauss')
+                new_X = self.G.new_position_in_neighbourhood(meso_X, self.G.bee_radius, 'gauss')
             elif cell < (self.automaton.count - 1):
-                new_X = self.G.new_position_in_neighbourhood(self.best_X, self.G.bee_radius * cell, 'sphere')
+                new_X = self.G.new_position_in_neighbourhood(meso_X, self.G.bee_radius * cell, 'sphere')
             else:
                 radius = self.G.bee_radius * (self.automaton.count - 1)
                 radius = radius + self.G.rand_exp(radius)
-                new_X  = self.G.new_position_in_neighbourhood(self.best_X, radius, 'sphere')
+                new_X  = self.G.new_position_in_neighbourhood(meso_X, radius, 'sphere')
 
             if self.G.costfn.calculate_cost(new_X) is not None:
                 if self.G.plotter is not None:
@@ -40,12 +62,16 @@ class F3_Fly(object):
                     if self.G.plotter is not None:
                         self.G.plotter.fly(self.gender, self.G.costfn.XA, self.X, None)
 
-                    self.best_X = self.G.costfn.XA
-                    self.X      = self.G.costfn.XA
+                    self.best_X  = self.G.costfn.XA
+                    self.best_XM = self.G.costfn.XM
+                    self.X       = self.G.costfn.XA
 
                     self.automaton.reward(cell)
                 else:
                     self.automaton.punish(cell)
+
+        if False: # this is very noisy
+            self.automaton.summarise()
 
     def new_local_search(self, flies, ranks, radius, jitter):
         if self.G.costfn.verbose:
@@ -77,8 +103,9 @@ class F3_Fly(object):
                     print('(updating personal best)')
                 if self.G.plotter is not None:
                     self.G.plotter.fly(self.gender, self.G.costfn.XA, self.X, None)
-                self.best_X = self.G.costfn.XA
-                self.X      = self.G.costfn.XA
+                self.best_X  = self.G.costfn.XA
+                self.best_XM = self.G.costfn.XM
+                self.X       = self.G.costfn.XA
             else:
                 if self.G.plotter is not None:
                     self.G.plotter.fly(self.gender, self.G.costfn.XA, self.X, self.best_X)
@@ -100,8 +127,9 @@ class F3_Fly(object):
             self.G.scout.evaluate(1)
             cost, XA, XM = self.G.scout.pop() # although, if we exhaust all of space, this will go infinite
 
-        self.X      = XA
-        self.best_X = XA
+        self.X       = XA
+        self.best_X  = XA
+        self.best_XM = XM
 
         if self.G.plotter is not None:
             self.G.plotter.fly(self.gender, self.X, None, None)

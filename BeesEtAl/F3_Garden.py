@@ -31,8 +31,10 @@ class F3_Garden(Base_Optimiser):
         self.fly_rmin   = 0.01    # search radius - minimum
         self.fly_rmax   = self.principal_radius(self.flies_bees[0] * len(self.genders) * len(self.orients))
 
-        self.bee_radius = 0.01
+        self.bee_radius = 0.01    # 0.02 seems better for multimodal optimisation
         self.bee_shells = 20
+        self.bee_reward = 0.10
+        self.bee_punish = 0.001
 
         self.jitter     = None    # neighborhood size following firefly movement, or None for radius / 2
         self.attract    = 'exp'   # nature of attraction, i.e., 'exp' for exp(-r), 'gauss' for exp(-r2)
@@ -165,6 +167,10 @@ class F3_Garden(Base_Optimiser):
             self.bee_radius = kwargs['bee-radius']
         if 'bee-shells' in kwargs:     # integer > 0
             self.bee_shells = kwargs['bee-shells']
+        if 'bee-reward' in kwargs:     # > 0
+            self.bee_reward = kwargs['bee-reward']
+        if 'bee-punish' in kwargs:     # > 0
+            self.bee_punish = kwargs['bee-punish']
         if 'fly-radius-min' in kwargs: # > 0
             self.fly_rmin = kwargs['fly-radius-min']
         if 'fly-radius-max' in kwargs: # > 0
