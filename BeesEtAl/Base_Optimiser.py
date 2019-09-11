@@ -23,9 +23,11 @@ class Base_Optimiser(Base_Sorter):
         self.method    = 'ball' # neighborhood shape: ball, sphere, cube, gauss
         self.rnudge    = 1E-2   # nudge radius - should probably be a lot smaller than 1
 
-        self.cheats     = None  # preloaded scout positions, if any
+        self.cheats    = None   # preloaded scout positions, if any
         self.scout     = Base_Scout(self)
         self.threshold = 1E-8
+
+        self.paretoset = Base_Sorter(len(range_minima), True)
 
     def _set_base_params(self, kwargs):
         if 'nudge-radius' in kwargs:

@@ -56,6 +56,9 @@ class Base_Coster(object):
             # see if subclass will suggest a better position to try
             self.meso()
 
+            # check Pareto front & add the cost at the true position and the MESO suggestion
+            self.BO.paretoset.push(self.cost, self.XA, self.XM)
+
         return self.cost # evaluated cost, or None
 
     def nudge(self):

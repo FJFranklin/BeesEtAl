@@ -177,3 +177,17 @@ class F3_Garden(Base_Optimiser):
             self.fly_rmax = kwargs['fly-radius-max']
         if 'jitter' in kwargs:         # > 0
             self.jitter = kwargs['jitter']
+
+    def baseline(self, fly_X, fly_radius):
+        if self.paretoset.Nrecord > 0:
+            new_X  = np.zeros(self.Ndim)
+
+            for ir in range(0, self.paretoset.Nrecord):
+                cost, X, M = self.paretoset.pop(ir)
+                new_X = new_X + self.attraction(X - fly_X, fly_radius)
+
+            new_X = new_X / self.paretoset.Nrecord + fly_X
+        else:
+            new_X = np.copy(fly_X)
+
+        return new_X

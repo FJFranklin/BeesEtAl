@@ -11,8 +11,9 @@ class Viennet(Base_Coster):
     def extents():
         return -3 * np.ones(2), 3 * np.ones(2)
 
-    def __init__(self, base_optimiser):
+    def __init__(self, base_optimiser, bMESO=False):
         Base_Coster.__init__(self, base_optimiser)
+        self.bMESO = bMESO
 
     def map_to_solution_space(self, X):
         return X
@@ -31,4 +32,9 @@ class Viennet(Base_Coster):
     def meso(self):
         # Default is to not change XM and therefore have no MESO solution
         # One option is to try the experimental self.nudge()
-        None
+
+        if self.bMESO:
+            # Here a random member of the current Pareto set is used as a suggestion:
+            cost, X, M = self.BO.paretoset.pop()
+            if X is not None:
+                self.XM = np.copy(X)

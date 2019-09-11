@@ -3,7 +3,7 @@ import csv
 import numpy as np
 
 class Base_Sorter(object):
-    def __init__(self, Ndim):
+    def __init__(self, Ndim, bPareto=False):
         self.Ndim    = Ndim
 
         self.ibest   = None # index of best record
@@ -11,6 +11,7 @@ class Base_Sorter(object):
         self.Nrecord = 0
         self.Ncost   = 0
         self.bMESO   = False
+        self.bPareto = bPareto
 
     def best(self):
         if self.ibest is not None:
@@ -85,27 +86,40 @@ class Base_Sorter(object):
 
         return index, rank
 
-    def pop(self):
+    def pop(self, index=None):
         cost = None
         X    = None
         M    = None
 
-        if self.ibest is not None:
-            cost  = self.record[self.ibest,1:(1+self.Ncost)]
-            X     = self.record[self.ibest,(1+self.Ncost):(1+self.Ncost+self.Ndim)]
-            if self.bMESO:
-                M = self.record[self.ibest,(1+self.Ncost+self.Ndim):]
+        if self.bPareto: # return a random (or by index, if specified) Pareto solution without removing it
+            if self.Nrecord > 0:
+                if index is None:
+                    i = np.random.randint(self.Nrecord)
+                else:
+                    i = index
 
-        if self.Nrecord == 1:
-            self.ibest   = None
-            self.record  = None
-            self.Nrecord = 0
-        elif self.Nrecord > 1:
-            self.record  = np.delete(self.record, self.ibest, axis=0)
-            self.Nrecord = self.Nrecord - 1
-            self.__rank()
+                cost  = self.record[i,1:(1+self.Ncost)]
+                X     = self.record[i,(1+self.Ncost):(1+self.Ncost+self.Ndim)]
+                if self.bMESO:
+                    M = self.record[i,(1+self.Ncost+self.Ndim):]
+        else:
+            if self.ibest is not None:
+                cost  = self.record[self.ibest,1:(1+self.Ncost)]
+                X     = self.record[self.ibest,(1+self.Ncost):(1+self.Ncost+self.Ndim)]
+                if self.bMESO:
+                    M = self.record[self.ibest,(1+self.Ncost+self.Ndim):]
 
-        #print('Pop: cost={c}, X={x}, M={m}'.format(c=cost, x=X, m=M))
+            if self.Nrecord == 1:
+                self.ibest   = None
+                self.record  = None
+                self.Nrecord = 0
+            elif self.Nrecord > 1:
+                self.record  = np.delete(self.record, self.ibest, axis=0)
+                self.Nrecord = self.Nrecord - 1
+                self.__rank()
+
+            #print('Pop: cost={c}, X={x}, M={m}'.format(c=cost, x=X, m=M))
+
         return cost, X, M
 
     def push(self, cost, X, M=None):
@@ -118,6 +132,48 @@ class Base_Sorter(object):
             self.Nrecord = 1
             self.Ncost   = len(cost)
             self.ibest   = 0
+        elif self.bPareto:
+            dominated = []
+
+            bDominant  = True
+            bDominated = False
+
+            for ir in range(0, self.Nrecord):
+                rcost = self.record[ir,1:(1+self.Ncost)]
+
+                if self.dominates(rcost, cost):
+                    bDominated = True
+                    bDominant  = False
+                    break
+                if self.dominates(cost, rcost):
+                    dominated.append(ir)
+                else:
+                    bDominant  = False
+
+            if bDominant:
+                if M is None:
+                    self.record  = np.asarray([[0, *cost, *X],], dtype=np.float64)
+                else:
+                    self.record  = np.asarray([[0, *cost, *X, *M],], dtype=np.float64)
+                self.Nrecord = 1
+                self.ibest   = 0
+            elif not bDominated:
+                if len(dominated) > 0:
+                    self.record  = np.delete(self.record, dominated, axis=0)
+                    self.Nrecord = self.Nrecord - len(dominated)
+                    self.__rank()
+
+                index, rank = self.__lookup(X)
+
+                if rank is None:
+                    if M is None:
+                        self.record = np.insert(self.record, index, [[0, *cost, *X],], axis=0)
+                    else:
+                        self.record = np.insert(self.record, index, [[0, *cost, *X, *M],], axis=0)
+                    self.Nrecord = self.Nrecord + 1
+                    self.__rank()
+
+                #print('~~~~( Optimal: {r} removed; new total = {t} )~~~~'.format(r=len(dominated), t=self.Nrecord))
         else:
             index, rank = self.__lookup(X)
 

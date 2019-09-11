@@ -80,6 +80,7 @@ class F3_Fly(object):
         if ranks[0] == 0: # self-fly is superior to any it is attracted to; let's be narcissistic
             new_X  = self.best_X
         else:
+            old_X  = self.G.baseline(self.X, radius)
             new_X  = np.zeros(self.G.Ndim)
             weight = np.zeros(len(flies))
 
@@ -91,9 +92,9 @@ class F3_Fly(object):
 
             for f in range(1, len(flies)):
                 if ranks[f] < ranks[0]: # a better fly than self-fly
-                    new_X = new_X + weight[f] * self.G.attraction(flies[f].best_X - self.X, radius)
+                    new_X = new_X + weight[f] * self.G.attraction(flies[f].best_X - old_X, radius)
 
-            new_X = new_X + self.X
+            new_X = new_X + old_X
 
         new_X = self.G.new_position_in_neighbourhood(new_X, jitter)
 
