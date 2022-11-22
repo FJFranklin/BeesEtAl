@@ -60,7 +60,7 @@ if args.function == 'exp':
     bf_func  = f_exp
     bf_deriv = df_exp
     bf_X     = np.asarray([-3,-2,-1,0,0.5,1,1.5,2,2.5,2.75,3])
-    bf_type  = 'plain'
+    bf_type  = 'invert'
 elif args.function == 'gauss':
     bf_func  = f_gauss
     bf_deriv = df_gauss
@@ -352,9 +352,23 @@ if args.eps_plot:
             curve.append((-4*x_qtr+fitter.m_cp2[0,ic],fitter.m_cp2[1,ic]))
             curve.append((-4*x_qtr+fitter.m_cp3[0,ic],fitter.m_cp3[1,ic]))
         curves.append(curve)
-    else: # just add the curve as-is
-        curve = [(fitter.m_cp0[0,0],fitter.m_cp0[1,0])]
+    elif bf_type == 'invert': # add the curve and its inverse
         count = fitter.m_cp0.shape[1]
+        curve = [(fitter.m_cp0[0,0],fitter.m_cp0[1,0])]
+        for ic in range(0, count):
+            curve.append((fitter.m_cp1[0,ic],fitter.m_cp1[1,ic]))
+            curve.append((fitter.m_cp2[0,ic],fitter.m_cp2[1,ic]))
+            curve.append((fitter.m_cp3[0,ic],fitter.m_cp3[1,ic]))
+        curves.append(curve)
+        curve = [(fitter.m_cp0[1,0],fitter.m_cp0[0,0])]
+        for ic in range(0, count):
+            curve.append((fitter.m_cp1[1,ic],fitter.m_cp1[0,ic]))
+            curve.append((fitter.m_cp2[1,ic],fitter.m_cp2[0,ic]))
+            curve.append((fitter.m_cp3[1,ic],fitter.m_cp3[0,ic]))
+        curves.append(curve)
+    else: # just add the curve as-is
+        count = fitter.m_cp0.shape[1]
+        curve = [(fitter.m_cp0[0,0],fitter.m_cp0[1,0])]
         for ic in range(0, count):
             curve.append((fitter.m_cp1[0,ic],fitter.m_cp1[1,ic]))
             curve.append((fitter.m_cp2[0,ic],fitter.m_cp2[1,ic]))
