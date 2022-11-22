@@ -7,17 +7,28 @@ from BeesEtAl.Base_Coster import Base_Coster
 
 parser = argparse.ArgumentParser(description="Test/Demo script for plotting/comparing BA/F3 while fitting a Bezier spline to a sine curve or Gaussian distribution.")
 
-parser.add_argument('-o', '--optimiser', help='Select optimiser [BA].',                            default='F3', choices=['BA', 'F3'])
 parser.add_argument('--function',        help='Select function to fit [sin].',                     default='sin', choices=['sin','tan','gauss','exp'])
 parser.add_argument('--iterations',      help='How many iterations to do [100].',                  default=100,  type=int)
 parser.add_argument('--no-plot',         help='Do not plot.',                                      action='store_true')
 parser.add_argument('--multiobjective',  help='Multiobjective optimisation.',                      action='store_true')
-parser.add_argument('--suppress',        help='In case of F3, suppress diversity.',                action='store_true')
-parser.add_argument('--attraction',      help='In case of F3, use exponential or Gaussian [exp].', default='exp', choices=['exp', 'gauss'])
 parser.add_argument('--out',             help='Specify output file name [pareto.csv].',            default='pareto.csv', type=str)
 parser.add_argument('--eps-plot',        help='Create an EPS plot.',                               action='store_true')
 parser.add_argument('--eps-scale',       help='How much to scale the EPS [100].',                  default=100,  type=int)
 parser.add_argument('--eps-out',         help='Specify output EPS file name [bezier.eps].',        default='bezier.eps', type=str)
+parser.add_argument('--ba-pure',         help='BA: Pure bees algorithm case (6/6/3/3+6).',                       action='store_true')
+parser.add_argument('--f3-pure',         help='F3: Pure firefly case (24+0).',                                   action='store_true')
+parser.add_argument('--f3-2G',           help='F3: Two-gender case only (2+6;2).',                               action='store_true')
+parser.add_argument('--f3-3G',           help='F3: Three-gender case only (1+4;3).',                             action='store_true')
+parser.add_argument('--f3-standard',     help='F3: One-gender case only (6+18).',                                action='store_true')
+parser.add_argument('--f3-suppress',     help='F3: Suppress diversity for specified no. evaluations (1+9;2).',   default=0,     type=int)
+parser.add_argument('--f3-bee-shells',   help='F3: Specify number of bee shells [20].',                          default=20,    type=int)
+parser.add_argument('--f3-bee-radius',   help='F3: Specify radius of inner bee shell [0.01].',                   default=0.01,  type=float)
+parser.add_argument('--f3-min-radius',   help='F3: Specify minimum attraction radius for fireflies [0.01].',     default=0.01,  type=float)
+parser.add_argument('--f3-max-radius',   help='F3: Specify maximum attraction radius for fireflies.',            default=None,  type=float)
+parser.add_argument('--f3-jitter',       help='F3: Specify neighborhood radius for fireflies.',                  default=None,  type=float)
+parser.add_argument('--f3-attraction',   help='F3: Specify exponential or Gaussian attraction [exp].',           default='exp', choices=['exp', 'gauss'])
+parser.add_argument('--f3-reward',       help='F3: Specify reward for finding better solution [0.10].',          default=0.10,  type=float)
+parser.add_argument('--f3-punish',       help='F3: Specify punishment for not finding better solution [0.001].', default=0.001, type=float)
 
 args = parser.parse_args()
 
@@ -48,7 +59,7 @@ def df_sin(x):
 if args.function == 'exp':
     bf_func  = f_exp
     bf_deriv = df_exp
-    bf_X     = np.asarray([-3,-2,-1,0,1,2,3])
+    bf_X     = np.asarray([-3,-2,-1,0,0.5,1,1.5,2,2.5,2.75,3])
     bf_type  = 'plain'
 elif args.function == 'gauss':
     bf_func  = f_gauss
@@ -133,48 +144,85 @@ P = None
 
 bSuppress = False
 
-if args.optimiser == 'BA':
-    from BeesEtAl.BA_Garden import BA_Garden
+if args.f3_pure:
+    cases    = [
+        ('F3', [ 24, 0]) ]
+elif args.ba_pure:
+    cases    = [
+        ('BA', [ 6,  6,  3,  3,  6]) ]
+elif args.f3_standard:
+    cases    = [
+        ('F3', [ 6, 18]) ]
+elif args.f3_2G:
+    cases    = [
+        ('F3', [ 2,  6,  2]) ]
+elif args.f3_3G:
+    cases    = [
+        ('F3', [ 1,  4,  3]) ]
+elif args.f3_suppress > 0:
+    cases    = [
+        ('F3', [ 1,  9,  2]) ]
+else:
+    cases    = [#        ('F3', [12, 12]),
+        ('F3', [18,  6]) ]
 
-    G = BA_Garden(minima, maxima, [5,2,2,1])
+for c in cases:
+    solver, flies_bees = c
 
-    if bPlot:
-        from BeesEtAl.BA_Plotter import BA_Plotter
-        P = BA_Plotter(G, [0, 1])
+    if solver == 'BA':
+        from BeesEtAl.BA_Garden import BA_Garden
 
-    method = 'gauss' # default is 'ball'; other options are 'cube' and 'sphere' (on rather than in)
-    Nfail  = 6       # i.e., stops at 6th failure
-    rf     = 0.01    # smallest patch radius
-    r0, sf = G.initial_radius_and_shrinking(Nfail, rf, method) # or set your own initial radius & shrinking factor
-    params = { 'radius': r0, 'shrink': sf, 'fail_at': Nfail, 'neighborhood': method, 'dynamic': True }
+        G = BA_Garden(minima, maxima, flies_bees)
 
-elif args.optimiser == 'F3':
-    from BeesEtAl.F3_Garden import F3_Garden
+        if bPlot:
+            from BeesEtAl.BA_Plotter import BA_Plotter
+            P = BA_Plotter(G, [0, 1])
 
-    G = F3_Garden(minima, maxima, [1,6,3])
+        method = 'gauss' # default is 'ball'; other options are 'cube' and 'sphere' (on rather than in)
+        Nfail  = 6       # i.e., stops at 6th failure
+        rf     = 0.01    # smallest patch radius
+        r0, sf = G.initial_radius_and_shrinking(Nfail, rf, method) # or set your own initial radius & shrinking factor
+        params = { 'radius': r0, 'shrink': sf, 'fail_at': Nfail, 'neighborhood': method, 'dynamic': True }
 
-    if bPlot:
-        from BeesEtAl.F3_Plotter import F3_Plotter
-        P = F3_Plotter(G, [0, 1])
+    elif solver == 'F3':
+        from BeesEtAl.F3_Garden import F3_Garden
 
-    method = 'gauss' # default is 'ball'; other options are 'cube' and 'sphere' (on rather than in)
-    params = { 'neighborhood': method, 'attraction': args.attraction }
+        G = F3_Garden(minima, maxima, flies_bees)
 
-    if args.suppress:
-        bSuppress = True
+        if bPlot:
+            from BeesEtAl.F3_Plotter import F3_Plotter
+            P = F3_Plotter(G, [0, 1])
 
-fitter = BezierFitter(G, bf_func, bf_deriv, bf_X)
-G.costfn = fitter
-G.set_search_params(**params)
+        method = 'gauss' # default is 'ball'; other options are 'cube' and 'sphere' (on rather than in)
+        params = { 'neighborhood': method }
 
-for it in range(1, 1 + args.iterations):
-    if bSuppress:
-        solver_runs = G.iterate(unisex=True)
-    else:
-        solver_runs = G.iterate()
+        params['attraction']     = args.f3_attraction
+        params['bee-radius']     = args.f3_bee_radius
+        params['bee-shells']     = args.f3_bee_shells
+        params['bee-reward']     = args.f3_reward
+        params['bee-punish']     = args.f3_punish
+        params['fly-radius-min'] = args.f3_min_radius
 
-    best_cost, best_X = G.best()
-    print('Iteration {:4d}: Global best = {c} @ {x}'.format(it, c=best_cost, x=best_X))
+        if args.f3_max_radius is not None: # if None, calculated automatically
+            params['fly-radius-max'] = args.f3_max_radius
+        if args.f3_jitter is not None:     # if None, calculated automatically
+            params['jitter']         = args.f3_jitter
+
+        if args.f3_suppress > 0:
+            bSuppress = True
+
+    fitter = BezierFitter(G, bf_func, bf_deriv, bf_X)
+    G.costfn = fitter
+    G.set_search_params(**params)
+
+    for it in range(1, 1 + args.iterations):
+        if it < args.f3_suppress:
+            solver_runs = G.iterate(unisex=True)
+        else:
+            solver_runs = G.iterate()
+
+        best_cost, best_X = G.best()
+        print('Iteration {:4d}: Global best = {c} @ {x}'.format(it, c=best_cost, x=best_X))
 
 if args.multiobjective:
     G.pareto(args.out)
