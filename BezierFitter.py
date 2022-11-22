@@ -247,9 +247,9 @@ if args.eps_plot:
             curve.append((3*x_qtr-fitter.m_cp1[0,count-ic-1],-fitter.m_cp1[1,count-ic-1]))
             curve.append((3*x_qtr-fitter.m_cp0[0,count-ic-1],-fitter.m_cp0[1,count-ic-1]))
         for ic in range(0, count):
-            curve.append((3*x_qtr+fitter.m_cp1[0,count-ic-1],fitter.m_cp1[1,count-ic-1]))
-            curve.append((3*x_qtr+fitter.m_cp2[0,count-ic-1],fitter.m_cp2[1,count-ic-1]))
-            curve.append((3*x_qtr+fitter.m_cp3[0,count-ic-1],fitter.m_cp3[1,count-ic-1]))
+            curve.append((3*x_qtr+fitter.m_cp1[0,ic],fitter.m_cp1[1,ic]))
+            curve.append((3*x_qtr+fitter.m_cp2[0,ic],fitter.m_cp2[1,ic]))
+            curve.append((3*x_qtr+fitter.m_cp3[0,ic],fitter.m_cp3[1,ic]))
         curves.append(curve)
     elif bf_type == 'qtr-tan':
         count = fitter.m_cp0.shape[1]
