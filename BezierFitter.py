@@ -8,7 +8,7 @@ from BeesEtAl.Base_Coster import Base_Coster
 parser = argparse.ArgumentParser(description="Test/Demo script for plotting/comparing BA/F3 while fitting a Bezier spline to a sine curve or Gaussian distribution.")
 
 parser.add_argument('-o', '--optimiser', help='Select optimiser [BA].',                            default='F3', choices=['BA', 'F3'])
-parser.add_argument('--function',        help='Select function to fit [sin].',                     default='sin', choices=['sin', 'gauss','tan'])
+parser.add_argument('--function',        help='Select function to fit [sin].',                     default='sin', choices=['sin','tan','gauss','exp'])
 parser.add_argument('--iterations',      help='How many iterations to do [100].',                  default=100,  type=int)
 parser.add_argument('--no-plot',         help='Do not plot.',                                      action='store_true')
 parser.add_argument('--multiobjective',  help='Multiobjective optimisation.',                      action='store_true')
@@ -20,6 +20,12 @@ parser.add_argument('--eps-scale',       help='How much to scale the EPS [100].'
 parser.add_argument('--eps-out',         help='Specify output EPS file name [bezier.eps].',        default='bezier.eps', type=str)
 
 args = parser.parse_args()
+
+def f_exp(x):
+    return np.exp(x)
+
+def df_exp(x):
+    return np.exp(x)
 
 def f_gauss(x):
     return np.exp(-0.5*x**2) / np.sqrt(2*np.pi)
@@ -39,7 +45,12 @@ def f_sin(x):
 def df_sin(x):
     return np.cos(x)
 
-if args.function == 'gauss':
+if args.function == 'exp':
+    bf_func  = f_exp
+    bf_deriv = df_exp
+    bf_X     = np.asarray([-3,-2,-1,0,1,2,3])
+    bf_type  = 'plain'
+elif args.function == 'gauss':
     bf_func  = f_gauss
     bf_deriv = df_gauss
     bf_X     = np.asarray([0,1,2,3])
