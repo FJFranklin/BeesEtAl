@@ -25,6 +25,8 @@ for it in range(0, 1000):
         print(".", flush=True)
     else:
         print(".", flush=True, end="")
+    if it % 100 == 99:
+        optimiser.trim_history(50)
 
     space.granularity = int(it/100) # no. decimal places
     optimiser.iterate()

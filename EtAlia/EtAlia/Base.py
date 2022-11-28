@@ -300,6 +300,19 @@ class Base_Optimiser(abc.ABC):
 
         return rank
 
+    def trim_history(self, new_count: np.uint32) -> None:
+        if self.__count <= new_count:
+            return
+        ivec = np.argsort(self.__index[0:self.__count,2])
+        self.__index = self.__index[ivec,:]
+        self.__costs = self.__costs[ivec,:]
+        self.__count = new_count
+        hist = []
+        for i in range(0, self.__count):
+            hist.append(self.__history[self.__index[i,0]])
+            self.__index[i,0] = i
+        self.__history = hist
+
     def select_solution(self, max_rank: np.uint32) -> Base_Solution:
         if self.__count == 0:
             return None
