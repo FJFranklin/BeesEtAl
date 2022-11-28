@@ -127,6 +127,10 @@ class ParetoCascade(object):
         return self.__child
 
     @property
+    def space(self) -> Base_Space:
+        return self.__space
+
+    @property
     def sols(self) -> list:
         return self.__sols
 
@@ -198,42 +202,35 @@ class ParetoCascade(object):
 
 class Base_Optimiser(abc.ABC):
     __problem: Base_Problem
+    __space: Base_Space
     __it: int
     __count: np.uint32  # how many records so far
     __index: np.ndarray # cross-reference checksum with index and ranking
     __costs: np.ndarray # costs, cross-ref and ranking
     __history: list     # complete history of solutions
-    __uniqueness: int   # set to zero to disable testing for uniqueness; otherwise, number of attempts
     __cascade: ParetoCascade
 
     def __init__(self, the_problem: Base_Problem) -> None:
         self.__problem = the_problem
+        self.__space = the_problem.space
         self.__it = 0
         self.__count = 0
         self.__index = None
         self.__costs = None
         self.__history = []
-        self.__uniqueness = 100
         self.__cascade = None
 
     @property
-    def problem(self) -> int:
+    def problem(self) -> Base_Problem:
         return self.__problem
+
+    @property
+    def space(self) -> Base_Space:
+        return self.__space
 
     @property
     def iteration(self) -> int:
         return self.__it
-
-    @property
-    def uniqueness(self) -> int:
-        return self.__uniqueness
-
-    @uniqueness.setter
-    def uniqueness(self, timeout: int) -> None:
-        if timeout <= 0:
-            self.__uniqueness = 0
-        else:
-            self.__uniqueness = timeout
 
     @property
     def cascade(self) -> ParetoCascade:
@@ -263,9 +260,9 @@ class Base_Optimiser(abc.ABC):
         csum = solution.checksum
 
         if self.__count == 0 and cost.shape[0] > 1:
-            C = ParetoCascade(self.__problem.space)
+            C = ParetoCascade(self.__space)
             for c in range(0, 10):
-                C = ParetoCascade(self.__problem.space, C)
+                C = ParetoCascade(self.__space, C)
             self.__cascade = C
 
         if self.__count == 0:
@@ -313,10 +310,10 @@ class Base_Optimiser(abc.ABC):
         indices = ivectuple[0]
         if indices.size == 0:
             return None
-        selection_index = indices[self.__problem.space.rng.choice(indices.shape[0])]
+        selection_index = indices[self.__space.rng.choice(indices.shape[0])]
         return self.__history[self.__index[selection_index,0]]
 
-    def _lookup(self, solution: Base_Solution) -> Base_Solution:
+    def lookup(self, solution: Base_Solution) -> Base_Solution:
         if self.__count == 0:
             return None
 
@@ -335,29 +332,6 @@ class Base_Optimiser(abc.ABC):
 
         return match
 
-    def _new_unique_scout(self) -> Base_Solution:
-        problem = self.problem
-        space = problem.space
-        count = 0
-        while True:
-            S = Base_Solution(space)
-            if self.__uniqueness == 0:
-                break
-            if self._lookup(S) is None:
-                break
-            count = count + 1
-            if count == self.__uniqueness:
-                S = None
-                break
-        return S
-
-    def _scout_evaluate_record(self) -> Tuple[Base_Solution, np.uint32]:
-        problem = self.problem
-        rank: np.uint32 = 0xFFFFFFFF
-
-        S = self._new_unique_scout()
-        if S is not None:
-            problem.evaluate(S)
-            rank = self._record(S)
-
-        return S, rank
+    def evaluate_and_record(self, new_solution: Base_Solution) -> np.uint32:
+        self.__problem.evaluate(new_solution)
+        return self._record(new_solution)

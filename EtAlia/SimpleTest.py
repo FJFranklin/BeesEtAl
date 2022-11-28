@@ -1,8 +1,9 @@
 import numpy as np
 
-from EtAlia.Simple import SimpleSpace, SimpleOptimiser, SimpleProblem, Gholami, Viennet, YueQuLiang
+from EtAlia.Simple import SimpleSpace, SimpleOptimiser, SimpleProblem
+from EtAlia.Tests import Gholami, Viennet, YueQuLiang
 
-test = 'YueQuLiang-1'
+test = 'Gholami-1'
 
 if test == 'Gholami-1':
     Ndim = 30
@@ -20,6 +21,11 @@ problem = SimpleProblem(space, function)
 optimiser = SimpleOptimiser(problem)
 
 for it in range(0, 1000):
+    if it % 100 == 99:
+        print(".", flush=True)
+    else:
+        print(".", flush=True, end="")
+
     space.granularity = int(it/100) # no. decimal places
     optimiser.iterate()
 
