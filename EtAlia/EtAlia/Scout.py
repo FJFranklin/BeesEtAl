@@ -1,6 +1,7 @@
 from typing import Tuple
 
 import numpy as np
+from scipy.spatial import ConvexHull
 
 from .Base import Base_Space, Base_Solution, Base_Problem, Base_Optimiser
 
@@ -8,11 +9,13 @@ class Base_Scout(object):
     __opt: Base_Optimiser
     __space: Base_Space
     __uniqueness: int   # set to zero to disable testing for uniqueness; otherwise, number of attempts
+    __sigma: np.double
 
     def __init__(self, optimiser: Base_Optimiser) -> None:
         self.__opt = optimiser
         self.__space = optimiser.space
         self.__uniqueness: int = 100
+        self.__sigma = 1.0
 
     @property
     def optimiser(self) -> Base_Optimiser:
@@ -32,6 +35,14 @@ class Base_Scout(object):
             self.__uniqueness = 0
         else:
             self.__uniqueness = timeout
+
+    @property
+    def sigma(self) -> np.double:
+        return self.__sigma
+
+    @sigma.setter
+    def sigma(self, value: np.double) -> None:
+        self.__sigma = value
 
     def __new_unique_scout(self, near: Base_Solution = None, sigma: np.double = 1) -> Base_Solution:
         count = 0
@@ -57,20 +68,13 @@ class Base_Scout(object):
         return S, self.__opt.evaluate_and_record(S)
 
 class FrontierScout(Base_Scout):
-    __sigma: np.double
-
-    def __init__(self, optimiser: Base_Optimiser, sigma: np.double) -> None:
+    def __init__(self, optimiser: Base_Optimiser) -> None:
         Base_Scout.__init__(self, optimiser)
-        self.__sigma = sigma
-
-    @property
-    def sigma(self) -> np.double:
-        return self.__sigma
 
     def __new_unique_scout(self, near: Base_Solution) -> Base_Solution:
         count = 0
         while True:
-            S = Base_Solution(self.space, self.space.random_nearby_coordinate(near.coordinate, self.__sigma))
+            S = Base_Solution(self.space, self.space.random_nearby_coordinate(near.coordinate, self.sigma))
 
             if self.uniqueness == 0:
                 break
@@ -96,3 +100,17 @@ class FrontierScout(Base_Scout):
             return super().scout()
 
         return S, self.optimiser.evaluate_and_record(S)
+
+class CascadeScout(Base_Scout):
+    def __init__(self, optimiser: Base_Optimiser) -> None:
+        Base_Scout.__init__(self, optimiser)
+
+    def scout(self) -> Tuple[Base_Solution, np.uint32]:
+        cascade = self.optimiser.cascade
+        if cascade is not None:
+            sols = self.optimiser.cascade
+            Nsol = len(sols)
+            if Nsol > 0:
+                Ncost = len(sols[0].cost)
+                pts = np.empty((1+Nsol,Ncost))
+        return super().scout()

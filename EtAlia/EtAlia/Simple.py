@@ -112,7 +112,8 @@ class SimpleOptimiser(Base_Optimiser):
             for s in range(0, 10):
                 B.scout()
         else:
-            F = FrontierScout(self, self.__sigma)
+            F = FrontierScout(self)
+            F.sigma = self.__sigma
             for s in range(0, 10):
                 F.scout()
             self.__sigma = self.__sigma * 0.99
