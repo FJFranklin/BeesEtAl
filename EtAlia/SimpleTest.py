@@ -53,27 +53,45 @@ else:
     optimiser.print(True)
 print("================================================================================")
 
-C = CascadeScout(optimiser)
-C.scout()
-
 if optimiser.cascade is not None:
     sols, cost = optimiser.pareto_solutions()
 
-    if cost.shape[1] == 2:
-        import matplotlib.pyplot as plt
+    C = CascadeScout(optimiser)
+    add_hull = C.build()
 
+    import matplotlib.pyplot as plt
+
+    if cost.shape[1] == 2:
         plt.scatter(cost[:,0], cost[:,1], marker='o')
-        plt.show()
+
+        if add_hull:
+            points = C.pts
+            hull = C.hull
+            for simplex in hull.simplices:
+                print(simplex)
+                plt.plot(points[simplex, 0], points[simplex, 1], 'k-')
 
     if cost.shape[1] == 3:
-        import matplotlib.pyplot as plt
-
         fig = plt.figure()
         ax = fig.add_subplot(projection='3d')
         ax.scatter(cost[:,0], cost[:,1], cost[:,2], marker='o')
+
+        if add_hull:
+            points = C.pts
+            hull = C.hull
+            origin_index = len(points) - 1
+            for simplex in hull.simplices:
+                if origin_index in simplex:
+                    continue
+                x = points[simplex, 0]
+                y = points[simplex, 1]
+                z = points[simplex, 2]
+                ax.plot([x[0],x[1]], [y[0],y[1]], [z[0],z[1]], 'k-')
+                ax.plot([x[1],x[2]], [y[1],y[2]], [z[1],z[2]], 'k-')
+                ax.plot([x[2],x[0]], [y[2],y[0]], [z[2],z[0]], 'k-')
 
         ax.set_xlabel('Cost 1')
         ax.set_ylabel('Cost 2')
         ax.set_zlabel('Cost 3')
 
-        plt.show()
+    plt.show()

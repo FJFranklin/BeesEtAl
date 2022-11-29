@@ -101,17 +101,26 @@ class FrontierScout(Base_Scout):
 
         return S, self.optimiser.evaluate_and_record(S)
 
-class CascadeScout(Base_Scout):
+class CascadeScout(FrontierScout):
     __pts: np.ndarray
     __hull: ConvexHull
 
     def __init__(self, optimiser: Base_Optimiser) -> None:
         Base_Scout.__init__(self, optimiser)
         self.__pts = None
+        self.__hull = None
+
+    @property
+    def pts(self) -> np.ndarray:
+        return self.__pts
+
+    @property
+    def hull(self) -> ConvexHull:
+        return self.__hull
 
     def build(self) -> bool:
-        self.__pts = pts
-        self.__hull = hull
+        self.__pts = None
+        self.__hull = None
 
         cascade = self.optimiser.cascade
         if cascade is None:
@@ -119,22 +128,29 @@ class CascadeScout(Base_Scout):
 
         sols = cascade.sols
         Nsol = len(sols)
-        if Nsol > 0:
-            Ncost = len(sols[0].cost)
-            pts = np.empty((1+Nsol,Ncost))
-            index = 1
-            for S in sols:
-                pts[index,:] = S.cost
-                index = index + 1
-            pts[0,:] = pts[1:,:].min(axis=0)
-
-        if pts.shape[0] <= pts.shape[1]:
+        if Nsol == 0:
             return False
+
+        Ncost = len(sols[0].cost)
+        if 1 + Nsol <= Ncost:
+            return False
+
+        pts = np.zeros((1+Nsol,Ncost))
+        index = 0
+        for S in sols:
+            pts[index,:] = S.cost
+            index = index + 1
+        pts[-1,:] = pts[:-1,:].min(axis=0)
+
+        # Project onto unit hypersphere
+        ptsn = np.copy(pts) - pts[-1,:]
+        norm = np.asarray([np.linalg.norm(ptsn[:-1,:], axis=1)])
+        ptsn[:-1,:] = ptsn[:-1,:] / norm.transpose()
 
         # TODO
         # 1. Must ensure that there are no repeats in the cascade if the history is being trimmed
         # 2. Need to think how to handle degeneracy
-        hull = ConvexHull(pts)
+        hull = ConvexHull(ptsn)
 
         self.__pts = pts
         self.__hull = hull
