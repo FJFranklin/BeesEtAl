@@ -89,7 +89,7 @@ class SimpleProblem(Base_Problem):
         Base_Problem.__init__(self, space)
         self.__function = test_function
 
-    def evaluate(self, X: Base_Solution) -> None:
+    def _evaluate(self, X: Base_Solution) -> None:
         X.cost = self.__function.evaluate(X.coordinate[0])
 
 class SimpleOptimiser(Base_Optimiser):

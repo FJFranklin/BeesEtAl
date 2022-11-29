@@ -102,15 +102,43 @@ class FrontierScout(Base_Scout):
         return S, self.optimiser.evaluate_and_record(S)
 
 class CascadeScout(Base_Scout):
+    __pts: np.ndarray
+    __hull: ConvexHull
+
     def __init__(self, optimiser: Base_Optimiser) -> None:
         Base_Scout.__init__(self, optimiser)
+        self.__pts = None
+
+    def build(self) -> bool:
+        self.__pts = pts
+        self.__hull = hull
+
+        cascade = self.optimiser.cascade
+        if cascade is None:
+            return False
+
+        sols = cascade.sols
+        Nsol = len(sols)
+        if Nsol > 0:
+            Ncost = len(sols[0].cost)
+            pts = np.empty((1+Nsol,Ncost))
+            index = 1
+            for S in sols:
+                pts[index,:] = S.cost
+                index = index + 1
+            pts[0,:] = pts[1:,:].min(axis=0)
+
+        if pts.shape[0] <= pts.shape[1]:
+            return False
+
+        # TODO
+        # 1. Must ensure that there are no repeats in the cascade if the history is being trimmed
+        # 2. Need to think how to handle degeneracy
+        hull = ConvexHull(pts)
+
+        self.__pts = pts
+        self.__hull = hull
+        return True
 
     def scout(self) -> Tuple[Base_Solution, np.uint32]:
-        cascade = self.optimiser.cascade
-        if cascade is not None:
-            sols = self.optimiser.cascade
-            Nsol = len(sols)
-            if Nsol > 0:
-                Ncost = len(sols[0].cost)
-                pts = np.empty((1+Nsol,Ncost))
         return super().scout()

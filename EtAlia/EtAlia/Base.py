@@ -100,17 +100,27 @@ class Base_Solution(object):
 
 class Base_Problem(abc.ABC):
     __space: Base_Space
+    __evaluations: int
 
     def __init__(self, solution_space: Base_Space) -> None:
         self.__space = solution_space
+        self.__evaluations = 0
 
     @property
     def space(self) -> Base_Space:
         return self.__space
 
+    @property
+    def evaluations(self) -> int:
+        return self.__evaluations
+
     @abc.abstractmethod
-    def evaluate(self, X: Base_Solution) -> None:
+    def _evaluate(self, X: Base_Solution) -> None:
         pass
+
+    def evaluate(self, X: Base_Solution) -> None:
+        self.__evaluations = self.__evaluations + 1
+        self._evaluate(X)
 
 class ParetoCascade(object):
     __child: 'ParetoCascade'

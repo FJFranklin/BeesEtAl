@@ -3,7 +3,8 @@ import argparse
 import numpy as np
 
 from EtAlia.Simple import SimpleSpace, SimpleOptimiser, SimpleProblem
-from EtAlia.Tests import Gholami, Viennet, YueQuLiang
+from EtAlia.Scout  import CascadeScout
+from EtAlia.Tests  import Gholami, Viennet, YueQuLiang
 
 parser = argparse.ArgumentParser(description="Misc. test functions 1-7.")
 
@@ -14,11 +15,14 @@ parser.add_argument('--trim',          help='Periodically trim history to [50] s
 
 args = parser.parse_args()
 
+decimals = 0
+
 if args.test == 1: # test == 'Gholami-1':
     Ndim = args.dimension
     test_no = 1
     function = Gholami(Ndim, test_no)
 elif args.test == 2: # test == 'Viennet':
+    decimals = 1
     function = Viennet()
 elif args.test == 3: # 'YueQuLiang-1':
     test_no = 1
@@ -39,7 +43,7 @@ for it in range(0, args.iterations):
         if it % 100 == 99:
             optimiser.trim_history(args.trim)
 
-    space.granularity = int(it/100) # no. decimal places
+    space.granularity = decimals + int(it/100) # no. decimal places
     optimiser.iterate()
 
 print("================================================================================")
@@ -49,9 +53,11 @@ else:
     optimiser.print(True)
 print("================================================================================")
 
+C = CascadeScout(optimiser)
+C.scout()
+
 if optimiser.cascade is not None:
     sols, cost = optimiser.pareto_solutions()
-    print(cost.shape)
 
     if cost.shape[1] == 2:
         import matplotlib.pyplot as plt
