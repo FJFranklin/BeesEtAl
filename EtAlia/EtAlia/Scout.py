@@ -102,59 +102,52 @@ class FrontierScout(Base_Scout):
         return S, self.optimiser.evaluate_and_record(S)
 
 class CascadeScout(FrontierScout):
-    __pts: np.ndarray
-    __hull: ConvexHull
-
     def __init__(self, optimiser: Base_Optimiser) -> None:
         Base_Scout.__init__(self, optimiser)
-        self.__pts = None
-        self.__hull = None
 
-    @property
-    def pts(self) -> np.ndarray:
-        return self.__pts
-
-    @property
-    def hull(self) -> ConvexHull:
-        return self.__hull
-
-    def build(self) -> bool:
-        self.__pts = None
-        self.__hull = None
-
+    def __new_unique_scout(self) -> Base_Solution:
         cascade = self.optimiser.cascade
         if cascade is None:
-            return False
+            return None
+        hull = cascade.hull
+        if hull is None:
+            return None
 
-        sols = cascade.sols
-        Nsol = len(sols)
-        if Nsol == 0:
-            return False
+        origin_index = len(cascade.pts) - 1
+        count = 0
+        while True:
+            if count == self.uniqueness:
+                S = None
+                break
+            count = count + 1
 
-        Ncost = len(sols[0].cost)
-        if 1 + Nsol <= Ncost:
-            return False
+            simplex = hull.simplices[self.space.rng.choice(len(hull.simplices))]
+            sp1 = self.space.rng.choice(len(simplex))
+            sp2 = sp1 + 1
+            if sp2 == len(simplex):
+                sp2 = 0
+            iv1 = simplex[sp1]
+            if iv1 == origin_index:
+                continue
+            iv2 = simplex[sp2]
+            if iv2 == origin_index:
+                continue
+            
+            S1 = cascade.sols[iv1]
+            S2 = cascade.sols[iv2]
 
-        pts = np.zeros((1+Nsol,Ncost))
-        index = 0
-        for S in sols:
-            pts[index,:] = S.cost
-            index = index + 1
-        pts[-1,:] = pts[:-1,:].min(axis=0)
+            delta = self.space.delta(S1.coordinate, S2.coordinate)
+            S = Base_Solution(self.space, self.space.random_nearby_coordinate(S1.coordinate, self.sigma, delta))
 
-        # Project onto unit hypersphere
-        ptsn = np.copy(pts) - pts[-1,:]
-        norm = np.asarray([np.linalg.norm(ptsn[:-1,:], axis=1)])
-        ptsn[:-1,:] = ptsn[:-1,:] / norm.transpose()
-
-        # TODO
-        # 1. Must ensure that there are no repeats in the cascade if the history is being trimmed
-        # 2. Need to think how to handle degeneracy
-        hull = ConvexHull(ptsn)
-
-        self.__pts = pts
-        self.__hull = hull
-        return True
+            if self.uniqueness == 0:
+                break
+            if self.optimiser.lookup(S) is None:
+                break
+        return S
 
     def scout(self) -> Tuple[Base_Solution, np.uint32]:
-        return super().scout()
+        S = self.__new_unique_scout()
+        if S is None:
+            return super().scout()
+
+        return S, self.optimiser.evaluate_and_record(S)

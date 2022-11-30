@@ -5,7 +5,7 @@ import json
 import numpy as np
 
 from .Base import Base_Vector, Base_Space, Base_Solution, Base_Problem, Base_Optimiser
-from .Scout import Base_Scout, FrontierScout
+from .Scout import Base_Scout, CascadeScout
 
 class SimpleTestFunction(abc.ABC):
     def __init__(self) -> None:
@@ -54,8 +54,10 @@ class SimpleSpace(Base_Space):
             new_coordinate = 0 + np.around(new_coordinate, self.__granularity) # add zero to prevent numpy retaining -ve sign in -0.0
         return [new_coordinate]
 
-    def random_nearby_coordinate(self, origin: list, unit_sigma: np.double) -> list:
+    def random_nearby_coordinate(self, origin: list, unit_sigma: np.double, direction: Base_Vector = None) -> list:
         origin_coord = origin[0]
+        if direction is not None:
+            origin_coord = origin_coord + unit_sigma * direction.vector[0]
         new_coordinate = None
         for n in range(0, 100):
             gauss, norm = self.rng_gauss(self.__Ndim)
@@ -74,7 +76,7 @@ class SimpleSpace(Base_Space):
     def delta(self, from_solution_coordinate: list, to_solution_coordinate: list) -> Base_Vector:
         v = to_solution_coordinate[0] - from_solution_coordinate[0]
         l = np.linalg.norm(v)
-        return Base_Vector(v, l)
+        return Base_Vector([v], l)
 
     def coordinate_to_json_string(self, solution_coordinate: list) -> str:
         return json.dumps(solution_coordinate[0].tolist())
@@ -93,32 +95,37 @@ class SimpleProblem(Base_Problem):
         X.cost = self.__function.evaluate(X.coordinate[0])
 
 class SimpleOptimiser(Base_Optimiser):
-    __sigma: np.double
+    __Npop: int
+    __Nbs: int
+    __B: Base_Scout
+    __C: CascadeScout
 
-    def __init__(self, the_problem: SimpleProblem) -> None:
+    def __init__(self, the_problem: SimpleProblem, population_size=10, base_scouts=3) -> None:
         Base_Optimiser.__init__(self, the_problem)
-        self.__sigma = 0.5
+        self.__Npop = population_size
+        self.__Nbs = base_scouts
+        self.__B = Base_Scout(self)
+        self.__C = CascadeScout(self)
+        assert base_scouts >= 0, "Number of base scouts (general search) should be a non-negative integer"
+        assert population_size >= base_scouts, "Total population should be a positive integer >= no. of base scouts"
 
-    def _iterate(self, noisy: bool = False) -> None:
+    def _iterate(self, sigma: np.double) -> None:
         it = self.iteration
-        problem = self.problem
-        space = problem.space
 
-        if noisy:
+        if self.noisy:
             print("Iteration {i}: ".format(i=it))
 
         if it == 1:
-            B = Base_Scout(self)
-            for s in range(0, 10):
-                B.scout()
+            for s in range(0, self.__Npop):
+                self.__B.scout()
         else:
-            F = FrontierScout(self)
-            F.sigma = self.__sigma
-            for s in range(0, 10):
-                F.scout()
-            self.__sigma = self.__sigma * 0.99
+            for s in range(0, self.__Nbs):
+                self.__B.scout()
+            self.__C.sigma = sigma
+            for s in range(self.__Nbs, self.__Npop):
+                self.__C.scout()
 
-        if noisy:
+        if self.noisy:
             if self.cascade is not None:
                 self.cascade.rank_print()
             else:

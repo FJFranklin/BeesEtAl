@@ -6,7 +6,6 @@ from pymoo.core.problem import Problem
 from pymoo.problems import get_problem
 
 from EtAlia.Simple import SimpleSpace, SimpleOptimiser, SimpleProblem, SimpleTestFunction
-from EtAlia.Scout  import CascadeScout
 
 parser = argparse.ArgumentParser(description="Uses PyMoo DTLZ test functions 1-7.")
 
@@ -49,6 +48,7 @@ space = SimpleSpace(extents)
 problem = SimpleProblem(space, function)
 optimiser = SimpleOptimiser(problem)
 
+sigma = 0.5
 for it in range(0, args.iterations):
     if it % 100 == 99:
         print(".", flush=True)
@@ -56,7 +56,8 @@ for it in range(0, args.iterations):
         print(".", flush=True, end="")
 
     space.granularity = 1 + int(it/100) # no. decimal places
-    optimiser.iterate()
+    optimiser.iterate(sigma)
+    sigma = sigma * 0.99
 
 print("================================================================================")
 if optimiser.cascade is not None:
@@ -68,17 +69,15 @@ print("=========================================================================
 if optimiser.cascade is not None:
     sols, cost = optimiser.pareto_solutions()
 
-    C = CascadeScout(optimiser)
-    add_hull = C.build()
+    hull = optimiser.cascade.hull
 
     import matplotlib.pyplot as plt
 
     if cost.shape[1] == 2:
         plt.scatter(cost[:,0], cost[:,1], marker='o')
 
-        if add_hull:
-            points = C.pts
-            hull = C.hull
+        if hull is not None:
+            points = optimiser.cascade.pts
             for simplex in hull.simplices:
                 print(simplex)
                 plt.plot(points[simplex, 0], points[simplex, 1], 'k-')
@@ -88,9 +87,8 @@ if optimiser.cascade is not None:
         ax = fig.add_subplot(projection='3d')
         ax.scatter(cost[:,0], cost[:,1], cost[:,2], marker='o')
 
-        if add_hull:
-            points = C.pts
-            hull = C.hull
+        if hull is not None:
+            points = optimiser.cascade.pts
             origin_index = len(points) - 1
             for simplex in hull.simplices:
                 if origin_index in simplex:

@@ -4,6 +4,8 @@ from typing import Tuple
 import zlib
 import numpy as np
 
+from .Cascade import ParetoCascade
+
 class Base_Vector(object):
     __vector: list      # list with arbitrary internal form representing the change between two solution parameter sets
     __length: np.double # normalised distance between the two points represented by the vector
@@ -43,7 +45,7 @@ class Base_Space(abc.ABC):
         return None
 
     @abc.abstractmethod
-    def random_nearby_coordinate(self, origin: list, unit_sigma: np.double) -> list:
+    def random_nearby_coordinate(self, origin: list, unit_sigma: np.double, direction: Base_Vector = None) -> list:
         return None
 
     @abc.abstractmethod
@@ -122,94 +124,6 @@ class Base_Problem(abc.ABC):
         self.__evaluations = self.__evaluations + 1
         self._evaluate(X)
 
-class ParetoCascade(object):
-    __child: 'ParetoCascade'
-    __space: Base_Space
-    __sols: list
-
-    def __init__(self, base_space: Base_Space, child_cascade: 'ParetoCascade' = None) -> None:
-        self.__child = child_cascade
-        self.__space = base_space
-        self.__sols = []
-
-    @property
-    def child(self) -> 'ParetoCascade':
-        return self.__child
-
-    @property
-    def space(self) -> Base_Space:
-        return self.__space
-
-    @property
-    def sols(self) -> list:
-        return self.__sols
-
-    @staticmethod
-    def check(cost1: np.ndarray, cost2: np.ndarray) -> Tuple[bool,bool]:
-        b1Dominates2, b2Dominates1 = True, True
-        for d in range(0, cost1.shape[0]):
-            if cost1[d] > cost2[d]:
-                b1Dominates2 = False
-            if cost2[d] > cost1[d]:
-                b2Dominates1 = False
-        return b1Dominates2, b2Dominates1
-
-    @property
-    def depth(self) -> int:
-        if len(self.__sols) == 0:
-            return 0
-        if self.__child is None:
-            return 1
-        return 1 + self.__child.depth
-
-    def select_solution(self) -> Base_Solution:
-        if self.depth == 0:
-            return None
-        d = np.double(self.depth)
-        if d > 1:
-            p1 = d
-            p2 = d*(d+1)/2
-            if self.__space.rng.choice([0,1],p=[p1/(p1+p2),p2/(p1+p2)]) > 0:
-                return self.__child.select_solution()
-        return self.__sols[self.__space.rng.choice(len(self.__sols))]
-
-    def add(self, new_solution: Base_Solution) -> np.uint32:
-        rank: np.uint32 = 0xFFFFFFFF
-        new_cost = new_solution.cost
-
-        sols_retain = []
-        for sol in self.__sols:
-            b1Dominates2, b2Dominates1 = False, False
-            if new_solution is not None:
-                b1Dominates2, b2Dominates1 = self.check(new_cost, sol.cost)
-            if b1Dominates2:
-                if self.__child is not None:
-                    self.__child.add(sol)
-            else:
-                sols_retain.append(sol)
-            if b2Dominates1:
-                if self.__child is not None:
-                    new_rank = self.__child.add(new_solution)
-                    if new_rank < rank:
-                        rank = new_rank + 1
-                new_solution = None
-
-        self.__sols = sols_retain
-
-        if new_solution is not None:
-            self.__sols.append(new_solution)
-            rank = 0
-        return rank
-
-    def rank_print(self, cascade: bool = False, rank: int = 0) -> None:
-        print("      === Pareto Cascade Rank {r} ===".format(r=rank))
-        for sol in self.__sols:
-            print('          {cost} @ {soln}'.format(cost=sol.cost, soln=sol.jstr))
-
-        if cascade == True:
-            if self.__child is not None:
-                self.__child.rank_print(True, rank + 1)
-
 class Base_Optimiser(abc.ABC):
     __problem: Base_Problem
     __space: Base_Space
@@ -219,6 +133,7 @@ class Base_Optimiser(abc.ABC):
     __costs: np.ndarray # costs, cross-ref and ranking
     __history: list     # complete history of solutions
     __cascade: ParetoCascade
+    __noisy: bool
 
     def __init__(self, the_problem: Base_Problem) -> None:
         self.__problem = the_problem
@@ -229,6 +144,7 @@ class Base_Optimiser(abc.ABC):
         self.__costs = None
         self.__history = []
         self.__cascade = None
+        self.__noisy = False
 
     @property
     def problem(self) -> Base_Problem:
@@ -246,13 +162,21 @@ class Base_Optimiser(abc.ABC):
     def cascade(self) -> ParetoCascade:
         return self.__cascade
 
+    @property
+    def noisy(self) -> None:
+        return self.__noisy
+
+    @noisy.setter
+    def noisy(self, print_info: bool) -> None:
+        self.__noisy = print_info
+
     @abc.abstractmethod
-    def _iterate(self) -> None:
+    def _iterate(self, sigma: np.double) -> None:
         pass
 
-    def iterate(self) -> None:
+    def iterate(self, sigma: np.double) -> None:
         self.__it = self.__it + 1
-        self._iterate()
+        self._iterate(sigma)
 
     def print(self, print_full_solution: bool) -> None:
         for i in range(0, self.__count):
@@ -270,9 +194,10 @@ class Base_Optimiser(abc.ABC):
         csum = solution.checksum
 
         if self.__count == 0 and cost.shape[0] > 1:
-            C = ParetoCascade(self.__space)
+            rng = self.__space.rng
+            C = ParetoCascade(rng)
             for c in range(0, 10):
-                C = ParetoCascade(self.__space, C)
+                C = ParetoCascade(rng, C)
             self.__cascade = C
 
         if self.__count == 0:
