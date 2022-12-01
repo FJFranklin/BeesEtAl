@@ -65,7 +65,10 @@ class Base_Scout(object):
         if S is None:
             return None, 0xFFFFFFFF
 
-        return S, self.__opt.evaluate_and_record(S)
+        rank = self.__opt.evaluate_and_record(S)
+        if rank == 0:
+            print("    Base_Scout: {cst}".format(cst=S.cost))
+        return S, rank
 
 class FrontierScout(Base_Scout):
     def __init__(self, optimiser: Base_Optimiser) -> None:
@@ -99,7 +102,10 @@ class FrontierScout(Base_Scout):
         if S is None:
             return super().scout()
 
-        return S, self.optimiser.evaluate_and_record(S)
+        rank = self.optimiser.evaluate_and_record(S)
+        if rank == 0:
+            print("    FrontierScout: {cst}".format(cst=S.cost))
+        return S, rank
 
 class CascadeScout(FrontierScout):
     def __init__(self, optimiser: Base_Optimiser) -> None:
@@ -150,4 +156,7 @@ class CascadeScout(FrontierScout):
         if S is None:
             return super().scout()
 
-        return S, self.optimiser.evaluate_and_record(S)
+        rank = self.optimiser.evaluate_and_record(S)
+        if rank == 0:
+            print("    CascadeScout: {cst}".format(cst=S.cost))
+        return S, rank

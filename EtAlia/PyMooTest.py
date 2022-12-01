@@ -36,7 +36,7 @@ class DTLZ(SimpleTestFunction):
 
     def evaluate(self, x: np.ndarray) -> np.ndarray:
         cost = self.__pf.evaluate(np.asarray([x]))
-        return cost[0]
+        return np.around(cost[0], 6)
 
 Ndim = args.dimension
 Nobj = 3
@@ -48,7 +48,7 @@ space = SimpleSpace(extents)
 problem = SimpleProblem(space, function)
 optimiser = SimpleOptimiser(problem)
 
-sigma = 0.5
+sigma = 1/6
 for it in range(0, args.iterations):
     if it % 100 == 99:
         print(".", flush=True)
@@ -57,7 +57,7 @@ for it in range(0, args.iterations):
 
     space.granularity = 1 + int(it/100) # no. decimal places
     optimiser.iterate(sigma)
-    sigma = sigma * 0.99
+    sigma = sigma * 0.999
 
 print("================================================================================")
 if optimiser.cascade is not None:

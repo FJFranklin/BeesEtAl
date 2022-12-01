@@ -33,7 +33,7 @@ space = SimpleSpace(extents)
 problem = SimpleProblem(space, function)
 optimiser = SimpleOptimiser(problem)
 
-sigma = 0.5
+sigma = 1/6
 for it in range(0, args.iterations):
     if it % 100 == 99:
         print(".", flush=True)
@@ -46,7 +46,7 @@ for it in range(0, args.iterations):
 
     space.granularity = decimals + int(it/100) # no. decimal places
     optimiser.iterate(sigma)
-    sigma = sigma * 0.99
+    sigma = sigma * 0.999
 
 print("================================================================================")
 if optimiser.cascade is not None:
