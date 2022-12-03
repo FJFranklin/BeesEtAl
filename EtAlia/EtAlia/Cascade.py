@@ -8,15 +8,19 @@ class ParetoCascade(object):
     __child: 'ParetoCascade'
     __rng: np.random.Generator
     __sols: list
+    __wts: np.ndarray
     __pts: np.ndarray
     __hull: ConvexHull
+    __dirty: bool
 
     def __init__(self, base_rng: np.random.Generator, child_cascade: 'ParetoCascade' = None) -> None:
         self.__child = child_cascade
         self.__rng = base_rng
         self.__sols = []
+        self.__wts = None
         self.__pts = None
         self.__hull = None
+        self.__dirty = True
 
     @property
     def child(self) -> 'ParetoCascade':
@@ -26,7 +30,6 @@ class ParetoCascade(object):
     def sols(self) -> list:
         return self.__sols
 
-    # Strict domination, or... ?
     @staticmethod
     def check(cost1: np.ndarray, cost2: np.ndarray) -> Tuple[bool,bool]:
         b1Dominates2, b2Dominates1 = True, True
@@ -35,7 +38,7 @@ class ParetoCascade(object):
                 b1Dominates2 = False
             if cost2[d] > cost1[d]:
                 b2Dominates1 = False
-        return b1Dominates2, b2Dominates1
+        return b1Dominates2, b2Dominates1 # both True if costs are equal
 
     @property
     def depth(self) -> int:
@@ -50,10 +53,12 @@ class ParetoCascade(object):
             return None
         d = np.double(self.depth)
         if d > 1:
-            p1 = d
-            p2 = d*(d+1)/2
+            p1 = 2.0 # d
+            p2 = 1.0 # d*(d+1)/2
             if self.__rng.choice([0,1],p=[p1/(p1+p2),p2/(p1+p2)]) > 0:
                 return self.__child.select_solution()
+        if self.__wts is not None:
+            return self.__sols[self.__rng.choice(len(self.__sols), p=self.__wts[:-1])]
         return self.__sols[self.__rng.choice(len(self.__sols))]
 
     def add(self, new_solution: 'Base_Solution') -> np.uint32:
@@ -66,7 +71,10 @@ class ParetoCascade(object):
             b1Dominates2, b2Dominates1 = False, False
             if new_solution is not None:
                 b1Dominates2, b2Dominates1 = self.check(new_cost, sol.cost)
-            if b1Dominates2:
+            if b1Dominates2 and b2Dominates1:
+                print("=", end="") # print(" - ParetoCascade::add: * * * unhandled duplicate cost: {c1} = {c2}".format(c1=new_cost, c2=sol.cost)) # FIXME
+                sols_retain.append(sol)
+            elif b1Dominates2:
                 set_changed = True
                 if self.__child is not None:
                     self.__child.add(sol)
@@ -86,8 +94,10 @@ class ParetoCascade(object):
             set_changed = True
             rank = 0
         if set_changed:
+            self.__wts = None
             self.__pts = None
             self.__hull = None
+            self.__dirty = True
         return rank
 
     def rank_print(self, cascade: bool = False, rank: int = 0) -> None:
@@ -100,8 +110,10 @@ class ParetoCascade(object):
                 self.__child.rank_print(True, rank + 1)
 
     def __build(self) -> None:
+        self.__wts = None
         self.__pts = None
         self.__hull = None
+        self.__dirty = False
 
         sols = self.__sols
         Nsol = len(sols)
@@ -124,9 +136,6 @@ class ParetoCascade(object):
         norm = np.asarray([np.linalg.norm(ptsn[:-1,:], axis=1)])
         ptsn[:-1,:] = ptsn[:-1,:] / norm.transpose()
 
-        # TODO
-        # 1. Must ensure that there are no repeats in the cascade if the history is being trimmed
-        # 2. Need to think how to handle degeneracy
         try:
             hull = ConvexHull(ptsn)
             self.__pts = pts
@@ -134,15 +143,38 @@ class ParetoCascade(object):
         except QhullError:
             print("*", end="")
 
+        if self.__hull is not None:
+            # Let's measure crowding
+            self.__wts = np.zeros(1+Nsol)
+            for simplex in self.__hull.simplices:
+                Nv = len(simplex)
+                for v1 in range(0, Nv-1):
+                    for v2 in range(v1+1, Nv):
+                        i1 = simplex[v1]
+                        if i1 == Nsol: # origin
+                            continue
+                        i2 = simplex[v2]
+                        if i2 == Nsol: # origin
+                            continue
+                        c1 = self.__pts[i1,:]
+                        c2 = self.__pts[i2,:]
+                        dc = np.linalg.norm(c2 - c1)
+                        self.__wts[i1] = self.__wts[i1] + 1/dc
+                        self.__wts[i2] = self.__wts[i2] + 1/dc
+            self.__wts = np.max(self.__wts) * 1.1 - self.__wts
+            self.__wts[Nsol] = 0
+            self.__wts = self.__wts / np.sum(self.__wts)
+            #print(">> wts = {w} <<".format(w=self.__wts))
+
     @property
     def pts(self) -> np.ndarray:
-        if self.__pts is None:
+        if self.__dirty:
             self.__build()
         return self.__pts
 
     @property
     def hull(self) -> ConvexHull:
-        if self.__hull is None:
+        if self.__dirty:
             self.__build()
         return self.__hull
 

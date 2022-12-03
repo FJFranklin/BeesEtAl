@@ -67,7 +67,7 @@ class Base_Scout(object):
 
         rank = self.__opt.evaluate_and_record(S)
         if rank == 0:
-            print("    Base_Scout: {cst}".format(cst=S.cost))
+            print("B", end="") # print("    Base_Scout: {cst}".format(cst=S.cost))
         return S, rank
 
 class FrontierScout(Base_Scout):
@@ -104,7 +104,7 @@ class FrontierScout(Base_Scout):
 
         rank = self.optimiser.evaluate_and_record(S)
         if rank == 0:
-            print("    FrontierScout: {cst}".format(cst=S.cost))
+            print("F", end="") # print("    FrontierScout: {cst}".format(cst=S.cost))
         return S, rank
 
 class CascadeScout(FrontierScout):
@@ -158,5 +158,5 @@ class CascadeScout(FrontierScout):
 
         rank = self.optimiser.evaluate_and_record(S)
         if rank == 0:
-            print("    CascadeScout: {cst}".format(cst=S.cost))
+            print("C", end="") # print("    CascadeScout: {cst}".format(cst=S.cost))
         return S, rank

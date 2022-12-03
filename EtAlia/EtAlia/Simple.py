@@ -5,7 +5,7 @@ import json
 import numpy as np
 
 from .Base import Base_Vector, Base_Space, Base_Solution, Base_Problem, Base_Optimiser
-from .Scout import Base_Scout, CascadeScout
+from .Scout import Base_Scout, FrontierScout, CascadeScout
 
 class SimpleTestFunction(abc.ABC):
     def __init__(self) -> None:
@@ -97,17 +97,22 @@ class SimpleProblem(Base_Problem):
 class SimpleOptimiser(Base_Optimiser):
     __Npop: int
     __Nbs: int
+    __Nfs: int
     __B: Base_Scout
+    __F: FrontierScout
     __C: CascadeScout
 
-    def __init__(self, the_problem: SimpleProblem, population_size=10, base_scouts=3) -> None:
+    def __init__(self, the_problem: SimpleProblem, population_size=10, base_scouts=3, frontier_scouts=3) -> None:
         Base_Optimiser.__init__(self, the_problem)
         self.__Npop = population_size
         self.__Nbs = base_scouts
+        self.__Nfs = frontier_scouts
         self.__B = Base_Scout(self)
+        self.__F = FrontierScout(self)
         self.__C = CascadeScout(self)
         assert base_scouts >= 0, "Number of base scouts (general search) should be a non-negative integer"
-        assert population_size >= base_scouts, "Total population should be a positive integer >= no. of base scouts"
+        assert frontier_scouts >= 0, "Number of frontier scouts (biassed search) should be a non-negative integer"
+        assert population_size >= (base_scouts + frontier_scouts), "Total population should be a positive integer >= no. of base+frontier scouts"
 
     def _iterate(self, sigma: np.double) -> None:
         it = self.iteration
@@ -121,8 +126,11 @@ class SimpleOptimiser(Base_Optimiser):
         else:
             for s in range(0, self.__Nbs):
                 self.__B.scout()
+            self.__F.sigma = sigma
+            for s in range(self.__Nbs, self.__Nbs + self.__Nfs):
+                self.__F.scout()
             self.__C.sigma = sigma
-            for s in range(self.__Nbs, self.__Npop):
+            for s in range(self.__Nbs + self.__Nfs, self.__Npop):
                 self.__C.scout()
 
         if self.noisy:
