@@ -1,5 +1,5 @@
 import abc
-from typing import Tuple
+from typing import List, Tuple
 
 import zlib
 import numpy as np
@@ -134,8 +134,10 @@ class Base_Optimiser(abc.ABC):
     __history: list     # complete history of solutions
     __cascade: ParetoCascade
     __noisy: bool
+    __scout_count: int
+    __scout_list: List[Tuple['Base_Scout',int]]
 
-    def __init__(self, the_problem: Base_Problem) -> None:
+    def __init__(self, the_problem: Base_Problem, scout_list: List[Tuple['Base_Scout',int]]) -> None:
         self.__problem = the_problem
         self.__space = the_problem.space
         self.__it = 0
@@ -145,6 +147,14 @@ class Base_Optimiser(abc.ABC):
         self.__history = []
         self.__cascade = None
         self.__noisy = False
+        self.__scout_count = 0
+        self.__scout_list = scout_list
+
+        for s in scout_list:
+            scout, Nscout = s
+            scout.optimiser = self
+            scout_count = scout.scouts
+            self.__scout_count = self.__scout_count + scout_count * Nscout
 
     @property
     def problem(self) -> Base_Problem:
@@ -169,6 +179,14 @@ class Base_Optimiser(abc.ABC):
     @noisy.setter
     def noisy(self, print_info: bool) -> None:
         self.__noisy = print_info
+
+    @property
+    def scout_count(self) -> int:
+        return self.__scout_count
+
+    @property
+    def scout_list(self) -> List[Tuple['Base_Scout',int]]:
+        return self.__scout_list
 
     @abc.abstractmethod
     def _iterate(self, sigma: np.double) -> None:

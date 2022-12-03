@@ -3,6 +3,7 @@ import argparse
 import numpy as np
 
 from EtAlia.Simple import SimpleSpace, SimpleOptimiser, SimpleProblem
+from EtAlia.Scout  import Base_Scout, FrontierScout, CascadeScout, BA_Patch
 from EtAlia.Tests  import Gholami, Viennet, YueQuLiang
 
 parser = argparse.ArgumentParser(description="Misc. test functions 1-7.")
@@ -28,10 +29,16 @@ elif args.test == 3: # 'YueQuLiang-1':
     test_no = 1
     function = YueQuLiang(test_no)
 
+B = Base_Scout()
+F = FrontierScout()
+C = CascadeScout()
+BA = BA_Patch(3, 5)
+scouts = [(B, 2), (F, 3), (BA, 1), (C, 2)]
+
 extents = function.extents()
 space = SimpleSpace(extents)
 problem = SimpleProblem(space, function)
-optimiser = SimpleOptimiser(problem)
+optimiser = SimpleOptimiser(problem, scouts)
 
 sigma = 1/6
 for it in range(0, args.iterations):
