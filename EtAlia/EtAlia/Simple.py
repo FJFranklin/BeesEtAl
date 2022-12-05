@@ -97,7 +97,7 @@ class SimpleProblem(Base_Problem):
 class SimpleOptimiser(Base_Optimiser):
     __B: Base_Scout
 
-    def __init__(self, the_problem: SimpleProblem, scout_list: List[Tuple[Base_Scout,int]]) -> None:
+    def __init__(self, the_problem: SimpleProblem, scout_list: List[Tuple[Base_Scout,int]]=None) -> None:
         Base_Optimiser.__init__(self, the_problem, scout_list)
         self.__B = Base_Scout()
         self.__B.optimiser = self
@@ -110,12 +110,18 @@ class SimpleOptimiser(Base_Optimiser):
 
         if it == 1:
             for s in range(0, self.scout_count):
+                if self.stop:
+                    break
                 self.__B.scout()
         else:
             for s in self.scout_list:
+                if self.stop:
+                    break
                 scout, Nscout = s
                 scout.sigma = sigma
                 for n in range(0, Nscout):
+                    if self.stop:
+                        break
                     scout.scout()
 
         if self.noisy:

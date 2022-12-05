@@ -1,5 +1,5 @@
 import abc
-from typing import List, Tuple
+from typing import List, Tuple, Callable
 
 import zlib
 import numpy as np
@@ -103,10 +103,12 @@ class Base_Solution(object):
 class Base_Problem(abc.ABC):
     __space: Base_Space
     __evaluations: int
+    __callback: Callable
 
-    def __init__(self, solution_space: Base_Space) -> None:
+    def __init__(self, solution_space: Base_Space, evaluations_callback: Callable=None) -> None:
         self.__space = solution_space
         self.__evaluations = 0
+        self.__callback = evaluations_callback
 
     @property
     def space(self) -> Base_Space:
@@ -116,13 +118,23 @@ class Base_Problem(abc.ABC):
     def evaluations(self) -> int:
         return self.__evaluations
 
+    @property
+    def callback(self) -> Callable:
+        return self.__callback
+
+    @callback.setter
+    def callback(self, evaluations_callback) -> None:
+        self.__callback = evaluations_callback
+
     @abc.abstractmethod
     def _evaluate(self, X: Base_Solution) -> None:
         pass
 
     def evaluate(self, X: Base_Solution) -> None:
-        self.__evaluations = self.__evaluations + 1
         self._evaluate(X)
+        self.__evaluations = self.__evaluations + 1
+        if self.__callback is not None:
+            self.__callback(self.__evaluations)
 
 class Base_Optimiser(abc.ABC):
     __problem: Base_Problem
@@ -136,8 +148,9 @@ class Base_Optimiser(abc.ABC):
     __noisy: bool
     __scout_count: int
     __scout_list: List[Tuple['Base_Scout',int]]
+    __stop: bool
 
-    def __init__(self, the_problem: Base_Problem, scout_list: List[Tuple['Base_Scout',int]]) -> None:
+    def __init__(self, the_problem: Base_Problem, scout_list: List[Tuple['Base_Scout',int]]=None) -> None:
         self.__problem = the_problem
         self.__space = the_problem.space
         self.__it = 0
@@ -147,10 +160,13 @@ class Base_Optimiser(abc.ABC):
         self.__history = []
         self.__cascade = None
         self.__noisy = False
+        self.__stop = False
         self.__scout_count = 0
         self.__scout_list = scout_list
 
-        for s in scout_list:
+        if self.__scout_list is None:
+            self.__scout_list = []
+        for s in self.__scout_list:
             scout, Nscout = s
             scout.optimiser = self
             scout_count = scout.scouts
@@ -181,12 +197,30 @@ class Base_Optimiser(abc.ABC):
         self.__noisy = print_info
 
     @property
+    def stop(self) -> None:
+        return self.__stop
+
+    @stop.setter
+    def stop(self, stop_optimiser: bool) -> None:
+        self.__stop = stop_optimiser
+
+    @property
     def scout_count(self) -> int:
         return self.__scout_count
 
     @property
     def scout_list(self) -> List[Tuple['Base_Scout',int]]:
         return self.__scout_list
+
+    def add_scout(self, new_scout: 'Base_Scout', repetitions: int=1) -> None:
+        new_scout.optimiser = self
+        self.__scout_list.append((new_scout, repetitions))
+
+        self.__scout_count = 0
+        for s in self.__scout_list:
+            scout, Nscout = s
+            scout_count = scout.scouts
+            self.__scout_count = self.__scout_count + scout_count * Nscout
 
     @abc.abstractmethod
     def _iterate(self, sigma: np.double) -> None:
@@ -299,5 +333,7 @@ class Base_Optimiser(abc.ABC):
         return match
 
     def evaluate_and_record(self, new_solution: Base_Solution) -> np.uint32:
+        if self.stop:
+            return 0xFFFFFFFF
         self.__problem.evaluate(new_solution)
         return self._record(new_solution)

@@ -3,7 +3,7 @@ from typing import Tuple
 import numpy as np
 from scipy.spatial import ConvexHull
 
-from .Base import Base_Space, Base_Solution, Base_Problem, Base_Optimiser
+from .Base import Base_Space, Base_Solution, Base_Optimiser
 
 class Base_Scout(object):
     __opt: Base_Optimiser
@@ -75,7 +75,7 @@ class Base_Scout(object):
             return None, 0xFFFFFFFF
 
         rank = self.__opt.evaluate_and_record(S)
-        if rank == 0:
+        if self.__opt.noisy and rank == 0:
             print("B", end="") # print("    Base_Scout: {cst}".format(cst=S.cost))
         return S, rank
 
@@ -112,7 +112,7 @@ class FrontierScout(Base_Scout):
             return super().scout()
 
         rank = self.optimiser.evaluate_and_record(S)
-        if rank == 0:
+        if self.optimiser.noisy and rank == 0:
             print("F", end="") # print("    FrontierScout: {cst}".format(cst=S.cost))
         return S, rank
 
@@ -166,7 +166,7 @@ class CascadeScout(FrontierScout):
             return super().scout()
 
         rank = self.optimiser.evaluate_and_record(S)
-        if rank == 0:
+        if self.optimiser.noisy and rank == 0:
             print("C", end="") # print("    CascadeScout: {cst}".format(cst=S.cost))
         return S, rank
 
@@ -214,7 +214,8 @@ class BA_Patch(Base_Scout):
             if self.__level == -1:
                 self.__best = self.optimiser.select_solution(10)
                 if self.__best is None:
-                    print(" - BA_Patch::scout: No starting solution available?")
+                    if self.optimiser.noisy:
+                        print(" - BA_Patch::scout: No starting solution available?")
                 else:
                     self.__scale = 1
                     self.__level = 0
@@ -226,12 +227,13 @@ class BA_Patch(Base_Scout):
 
             S = self.__new_unique_scout()
             if S is None:
-                print(" - BA_Patch::scout: No nearby solution - resetting")
+                if self.optimiser.noisy:
+                    print(" - BA_Patch::scout: No nearby solution - resetting")
                 self.__level = -1
                 continue
             rank = self.optimiser.evaluate_and_record(S)
-            if rank == 0:
-                print("[BA({l})]".format(l=self.__level), end="") # print("    CascadeScout: {cst}".format(cst=S.cost))
+            if self.optimiser.noisy and rank == 0:
+                print("[BA({l})]".format(l=self.__level), end="")
 
             old_cost = self.__best.cost
             new_cost = S.cost

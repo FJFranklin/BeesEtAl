@@ -12,6 +12,7 @@ parser.add_argument('--iterations',    help='How many iterations (not evaluation
 parser.add_argument('--test',          help='Test function: 1. Gholami-1 2. Viennet 3. YueQuLiang-1 [1]',      default=1,    type=int)
 parser.add_argument('--dimension',     help='What dimension of space should be used (where relevant) [30].',   default=30,   type=int)
 parser.add_argument('--trim',          help='Periodically trim history to [50] solutions (or 0 to keep all).', default=50,   type=int)
+parser.add_argument('-v', '--verbose', help='Print extra info along the way.',                                 action='store_true')
 
 args = parser.parse_args()
 
@@ -29,31 +30,37 @@ elif args.test == 3: # 'YueQuLiang-1':
     test_no = 1
     function = YueQuLiang(test_no)
 
-B = Base_Scout()
-F = FrontierScout()
-C = CascadeScout()
-BA = BA_Patch(3, 5)
-scouts = [(B, 2), (F, 3), (BA, 1), (C, 2)]
-
 extents = function.extents()
 space = SimpleSpace(extents)
 problem = SimpleProblem(space, function)
-optimiser = SimpleOptimiser(problem, scouts)
+
+optimiser = SimpleOptimiser(problem)
+optimiser.noisy = args.verbose
+
+optimiser.add_scout(Base_Scout(), 3)    # add three general search scouts
+optimiser.add_scout(FrontierScout(), 3) # add three frontier scouts to refine existing best solutions
+optimiser.add_scout(CascadeScout())     # in multi- mode, a cascade scout searches between existing; otherwise defaults to frontier
+optimiser.add_scout(BA_Patch(3, 5))     # add in a Bees Algorithm patch with 3 bees and 5 refinement levels
+
+def callback(no_evals: int) -> None:
+    if (no_evals > 0) and (no_evals % 100) == 0:
+        if optimiser.noisy:
+            print(" - #eval={e}".format(e=problem.evaluations))
+        if args.trim > 0:
+            optimiser.trim_history(args.trim)
+    if no_evals == args.iterations:
+        optimiser.stop = True
+
+problem.callback = callback
 
 sigma = 1/6
-for it in range(0, args.iterations):
-    if it % 100 == 99:
-        print(".", flush=True)
-    else:
-        print(".", flush=True, end="")
-
-    if args.trim > 0:
-        if it % 100 == 99:
-            optimiser.trim_history(args.trim)
-
+it = 0
+while not optimiser.stop:
     space.granularity = decimals + int(it/100) # no. decimal places
     optimiser.iterate(sigma)
+
     sigma = sigma * 0.999
+    it = it + 1
 
 print("================================================================================")
 if optimiser.cascade is not None:
